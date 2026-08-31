@@ -1,69 +1,106 @@
-import Image from "next/image";
+import { Building2, HardHat, Store } from "lucide-react";
+import Link from "next/link";
+import { SwitchUserButton } from "@/components/switch-user-button";
+import { listPrototypeUsers } from "@/data/users";
+import { fixtureClock } from "@/domain/fixtures";
 
-export default function Home() {
+const SURFACES = {
+  manager: {
+    href: "/dashboard",
+    title: "Management",
+    icon: Building2,
+    blurb:
+      "Attention-led dashboard, booking requests, contracts, work orders and service history.",
+  },
+  client: {
+    href: "/portal",
+    title: "Client portal",
+    icon: Store,
+    blurb:
+      "Catalogue and date-based discovery, shortlist, contracts, and the service timeline.",
+  },
+  fitter: {
+    href: "/jobs",
+    title: "Fitter app",
+    icon: HardHat,
+    blurb:
+      "Phone-first job list, progress updates, blocked reasons and proof of completion.",
+  },
+} as const;
+
+const ORDER = ["manager", "client", "fitter"] as const;
+
+export default async function Home() {
+  const users = await listPrototypeUsers();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="mx-auto w-full max-w-5xl px-6 py-16">
+      <p className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+        Island Media Co
+      </p>
+      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-balance">
+        Out-of-home advertising, run from one operating model.
+      </h1>
+      <p className="mt-4 max-w-2xl text-lg text-muted-foreground text-pretty">
+        Three surfaces over the same data. Pick a seeded account to enter, or
+        sign up as a new client with no contract.
+      </p>
+
+      <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-info-surface px-3 py-1.5 text-sm text-info">
+        <span className="font-medium">Prototype clock</span>
+        <span className="font-mono text-xs">
+          {fixtureClock.toISOString().replace(".000Z", "Z")}
+        </span>
+      </p>
+
+      <div className="mt-12 grid gap-5 md:grid-cols-3">
+        {ORDER.map((role) => {
+          const surface = SURFACES[role];
+          const Icon = surface.icon;
+          const people = users.filter((user) => user.role === role);
+
+          return (
+            <section
+              key={role}
+              className="flex flex-col rounded-lg border bg-card p-5 shadow-xs"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              <Icon className="size-5 text-primary" />
+              <h2 className="mt-3 font-semibold">{surface.title}</h2>
+              <p className="mt-1.5 flex-1 text-sm text-muted-foreground text-pretty">
+                {surface.blurb}
+              </p>
+
+              <div className="mt-5 space-y-2">
+                {people.map((user) => (
+                  <SwitchUserButton
+                    key={user.id}
+                    userId={user.id}
+                    href={surface.href}
+                    label={user.name}
+                    detail={user.organisation?.name ?? "Island Media Co staff"}
+                  />
+                ))}
+              </div>
+
+              {role === "client" && (
+                <Link
+                  href="/register"
+                  className="mt-3 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Sign up as a new client
+                </Link>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      <p className="mt-12 max-w-2xl text-sm text-muted-foreground">
+        Accounts are a prototype seam, not authentication. Switching sets a
+        cookie holding the selected user id. Production identity, tenant
+        isolation and record-level authorisation are covered in the
+        productionisation note.
+      </p>
+    </main>
   );
 }
