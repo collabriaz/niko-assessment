@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { listProducts } from "@/data/products";
 import { fixtureClock } from "@/domain/fixtures";
+import { serviceUnavailable, validationError } from "@/lib/api-errors";
 
 const querySchema = z
   .object({
@@ -22,13 +23,9 @@ export async function GET(request: Request) {
   const parsed = querySchema.safeParse(params);
 
   if (!parsed.success)
-    return Response.json(
-      {
-        code: "VALIDATION_ERROR",
-        message: "The catalogue query is not valid.",
-        details: z.flattenError(parsed.error),
-      },
-      { status: 422 },
+    return validationError(
+      "The catalogue query is not valid.",
+      z.flattenError(parsed.error),
     );
 
   try {
@@ -47,13 +44,6 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error(error);
 
-    return Response.json(
-      {
-        code: "SERVICE_UNAVAILABLE",
-        message: "Please try again. The service is temporarily unavailable.",
-        details: null,
-      },
-      { status: 503 },
-    );
+    return serviceUnavailable();
   }
 }

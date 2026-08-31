@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getProduct } from "@/data/products";
 import { fixtureClock } from "@/domain/fixtures";
+import { notFound, validationError } from "@/lib/api-errors";
 
 const querySchema = z
   .object({ startDate: z.iso.date(), endDate: z.iso.date() })
@@ -19,13 +20,9 @@ export async function GET(
   );
 
   if (!parsed.success)
-    return Response.json(
-      {
-        code: "VALIDATION_ERROR",
-        message: "The requested dates are not valid.",
-        details: z.flattenError(parsed.error),
-      },
-      { status: 422 },
+    return validationError(
+      "The requested dates are not valid.",
+      z.flattenError(parsed.error),
     );
 
   const product = await getProduct(productId, {
@@ -33,15 +30,7 @@ export async function GET(
     now: fixtureClock,
   });
 
-  if (!product)
-    return Response.json(
-      {
-        code: "NOT_FOUND",
-        message: "That product does not exist.",
-        details: null,
-      },
-      { status: 404 },
-    );
+  if (!product) return notFound("That product does not exist.");
 
   return Response.json(product);
 }
