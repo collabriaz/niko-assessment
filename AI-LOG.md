@@ -32,7 +32,7 @@ agent was running while I was not watching.
 
 | Tool               | Contribution                                                                                   | How the output was verified                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code (Opus) | Fixture analysis, the `src/domain/` availability engine, the Prisma schema and seed, the org-scoped data layer, every route handler so far, the design tokens, and the test suite | Three layers, because each catches what the others cannot. `pnpm test` (65/65) runs pure domain probes plus integration tests against Postgres. A shell smoke suite then exercises every route over real HTTP, because an in-process test calls the handler function and never touches Next's router, body parsing or dynamic segments. Colour tokens were verified with an oklch to sRGB converter rather than by eye. Every expected value was traced to a specific fixture record before the assertion was written |
+| Claude Code (Opus) | Fixture analysis, the `src/domain/` availability engine, the Prisma schema and seed, the org-scoped data layer, the route handlers, the three surfaces, the design tokens and the test suite | Three layers, because each catches what the others cannot. `pnpm test` (188 tests, 21 files) runs pure domain probes plus integration tests against Postgres. During development a throwaway shell script also exercised routes over real HTTP, because an in-process test calls the handler function and never touches Next's router, body parsing or dynamic segments; that script is not committed. Colour tokens were verified with an oklch to sRGB converter rather than by eye. Every expected value was traced to a specific fixture record before the assertion was written |
 
 ## Corrections
 
@@ -218,24 +218,6 @@ agent was running while I was not watching.
 - **What check proved the correction:** the completion test serialises the whole client contract
   response and asserts it contains neither `createdByUserId` nor the work order's internal note.
 
-## Prompts worth quoting
-
-`CLAUDE.md` at the repo root is the standing instruction set the agent worked under, and is
-the honest answer to "agent instructions" rather than any single prompt.
-
-Two directions that changed the work materially:
-
-- Asked for the deliberate traps in the fixtures before any code was written, which produced
-  the probe queries the test suite is built around.
-- "Never add useless comments" after reviewing the first pass, which tightened the comment
-  rule in `CLAUDE.md` and removed three comments that only restated test names.
-- "Match the requirements, dont introduce anything new", which cut two features I had proposed
-  that the brief never asks for: a submit-time minimum-term warning on the request form, and
-  pre-filling draft contract dates to the minimum term. It also reduced three proposed schema
-  changes to two, by holding prototype proof in the OpenAPI's existing `previewUrl` as a
-  capped base64 data URI rather than adding columns. Section 13 does not reward feature
-  count, so pruning against the brief is worth more than the features were.
-
 ### 11. A journey test that wrote to a shared fixture organisation
 
 - **What the tool generated:** the shortlist-to-inbox journey test shortlisted a product as
@@ -293,6 +275,24 @@ Two directions that changed the work materially:
   behaviour was changed to suit a test: the five-job dashboard limit stayed as it is.
 - **What check proved the correction:** the full suite run three times back to back, 188 of 188
   each time, then `pnpm build`.
+
+## Prompts worth quoting
+
+`CLAUDE.md` at the repo root is the standing instruction set the agent worked under, and is
+the honest answer to "agent instructions" rather than any single prompt.
+
+Two directions that changed the work materially:
+
+- Asked for the deliberate traps in the fixtures before any code was written, which produced
+  the probe queries the test suite is built around.
+- "Never add useless comments" after reviewing the first pass, which tightened the comment
+  rule in `CLAUDE.md` and removed three comments that only restated test names.
+- "Match the requirements, dont introduce anything new", which cut two features I had proposed
+  that the brief never asks for: a submit-time minimum-term warning on the request form, and
+  pre-filling draft contract dates to the minimum term. It also reduced three proposed schema
+  changes to two, by holding prototype proof in the OpenAPI's existing `previewUrl` as a
+  capped base64 data URI rather than adding columns. Section 13 does not reward feature
+  count, so pruning against the brief is worth more than the features were.
 
 ## Open assumptions to carry into the README
 
