@@ -269,6 +269,31 @@ Two directions that changed the work materially:
 - **What check proved the correction:** three consecutive full runs at 179 of 179. A single
   green run was not accepted as evidence, because the failure was intermittent.
 
+### 13. Probe data that displaced fixture data, twice in one change
+
+- **What the tool generated:** tests for the new management contract actions. The cancel probe
+  created a confirmed booking on the fixture asset `asset-bus-101-rear` over 2027-08-01 to
+  2027-09-01, and it added a twenty-first parallel test file.
+- **Why it was wrong, first:** the client contract-actions probes accept contracts on that same
+  asset over those same dates. The new booking made their acceptance a genuine inventory
+  conflict, so three of their tests failed with 409 instead of 200. Correction 11 was about a
+  shared fixture organisation; this is the same defect through shared fixture inventory.
+- **Why it was wrong, second:** the added parallelism surfaced a latent flake in the dashboard
+  test. Probe work orders were scheduled at 2027-01-15T13:00, earlier than the seeded
+  `work-order-001` at 2027-01-16T08:30, and the dashboard lists only five upcoming jobs. Once
+  enough probes existed at once, the fixture job was pushed out of the list it is asserted to
+  be in.
+- **How it was noticed:** `pnpm test` failed with four failures across two files that the
+  change did not touch, then a rerun failed with a different single failure. Disagreeing runs
+  were treated as the defect rather than retried until green.
+- **What changed:** the cancel probe moved to 2029, where nothing else asserts availability.
+  Creating a new asset was rejected as the fix, because adding an asset to a product changes
+  the per-product free-asset counts that the availability probes assert. The probe work orders
+  moved to 2027-01-20 so they sit after the seeded job rather than ahead of it. No product
+  behaviour was changed to suit a test: the five-job dashboard limit stayed as it is.
+- **What check proved the correction:** the full suite run three times back to back, 188 of 188
+  each time, then `pnpm build`.
+
 ## Open assumptions to carry into the README
 
 - Verification older than 30 days makes a product `confirmation_required`. The brief lists

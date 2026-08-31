@@ -113,11 +113,13 @@ second underneath it.
 
 ## Contract versioning and the signature boundary
 
-A contract is immutable once issued. The schema carries `version` but the prototype never
-increments it, because nothing yet revises an issued contract. Production makes a change
-request produce version n+1 as a new row sharing a contract group id, leaving the issued
-version untouched, so it is always possible to show precisely what the client accepted and
-when.
+A contract is immutable once issued. The prototype takes the first step: management responds
+to a change request by re-issuing, which increments `version`, records the note on both the
+contract and the client's request, and puts it back in front of the client. It still edits
+nothing, so revising terms is an offline conversation. Production makes a change request
+produce version n+1 as a new row sharing a contract group id, with the edited items on the new
+version and the issued one left untouched, so it is always possible to show precisely what the
+client accepted and when.
 
 Acceptance in the prototype is a button, and it is labelled as a prototype acceptance rather
 than a signature. In production the application owns the document and the state machine, and a

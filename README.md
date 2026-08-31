@@ -40,7 +40,8 @@ ignored.
 | `pnpm db:seed` | Load the fixtures |
 | `pnpm db:reset` | Drop, re-push and re-seed |
 
-`POST /api/dev/reset` re-seeds a running deployment without a shell.
+`POST /api/dev/reset` re-seeds a running deployment without a shell. It requires a manager,
+so the public preview cannot be wiped by a passer-by.
 
 ## Signing in
 
@@ -109,6 +110,9 @@ logic in a handler, no HTTP objects in the domain layer, no organisation scoping
   rate label, and a null price renders as "Price on request" and never passes a budget filter.
 - A client action never rewrites an issued contract. `request_changes` records a request and
   moves the status; items, dates and totals are untouched.
+- Management responds to a change request by re-issuing, which raises the contract version.
+  Cancelling a contract releases its booked inventory, so a cancelled campaign stops blocking
+  the asset.
 - Field-level visibility is real even though auth is not. `workOrder.internalNotes` reaches
   managers and the assigned fitter only, and clients see `serviceEvent.clientSummary` rather
   than the record behind it.
@@ -116,7 +120,7 @@ logic in a handler, no HTTP objects in the domain layer, no organisation scoping
 ## Tests
 
 ```bash
-pnpm test        # 179 tests, 20 files
+pnpm test        # 188 tests, 21 files
 pnpm test:unit   # domain only, no database
 ```
 
@@ -206,17 +210,14 @@ surface covers the connected scenarios rather than every table.
 
 ## Known limitations
 
-- **Management cannot yet respond to a change request.** A client can request changes or
-  cancellation and the contract moves to `change_requested`, but there is no management action
-  to revise, re-issue or cancel it, so the request stays pending. The dashboard raises it and
-  the client is told nothing has changed, which is correct, but the loop does not close.
+- **Re-issuing does not edit the contract.** Management responds to a change request by
+  re-issuing with a note, which raises the version and returns the contract to the client.
+  Items, dates and totals are unchanged, so revising terms is still an offline conversation.
+  Production would write a new version row with edited items, as the productionisation note
+  describes.
 - **A client cannot reply to a request for information.** Management can set a booking request
   to `information_required` and the client sees that status, but supplying the answer needs an
   endpoint that does not exist. The fixture's `request-002` shows the intended shape.
-- **Contract `completed` and `cancelled` are modelled but unreachable.** Nothing transitions
-  into either state.
-- **`POST /api/dev/reset` is unauthenticated.** Convenient for a reviewer, wrong for a public
-  deployment.
 - **The client sees proof metadata, not the image.** Management renders the captured photo;
   the client contract page lists the file name and completion note only.
 - **Contract line items show product and asset ids** rather than names on both the client and
