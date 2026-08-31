@@ -1,4 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { historyEntrySchema } from "../domain/schemas";
+import {
+  isClientVisibleStatus,
+  statusBlockers,
+  transitionAllowed,
+  type WorkOrderStatus,
+} from "../domain/work-orders";
 import { IDEMPOTENCY_SCOPE } from "../lib/idempotency";
 import { prisma } from "../lib/prisma";
 
@@ -220,3 +227,184 @@ export const getWorkOrderForManagement = async (workOrderId: string) => {
     })),
   };
 };
+
+const FITTER_ACTOR = "fitter";
+const COMPLETION_SUMMARY = "Work has been completed and photographed.";
+
+const completedTitle = (type: string) =>
+  `${type.charAt(0).toUpperCase()}${type.slice(1)} completed`;
+
+export const listWorkOrdersForFitter = async (
+  assignedUserId: string,
+  status?: string,
+) => {
+  const workOrders = await prisma.workOrder.findMany({
+    where: { assignedUserId, status },
+    include: ASSIGNED_INCLUDE,
+    orderBy: { scheduledStart: "asc" },
+  });
+
+  return workOrders.map(toAssignedWorkOrder);
+};
+
+export const getWorkOrderForFitter = async (
+  workOrderId: string,
+  assignedUserId: string,
+) => {
+  const workOrder = await prisma.workOrder.findFirst({
+    where: { id: workOrderId, assignedUserId },
+    include: ASSIGNED_INCLUDE,
+  });
+
+  return workOrder ? toAssignedWorkOrder(workOrder) : null;
+};
+
+type StatusInput = {
+  workOrderId: string;
+  userId: string;
+  status: WorkOrderStatus;
+  note: string | null;
+  idempotencyKey: string;
+  now: Date;
+};
+
+export const applyStatusUpdate = (input: StatusInput) =>
+  prisma.$transaction(async (tx) => {
+    const key = {
+      scope: IDEMPOTENCY_SCOPE.workOrderStatus,
+      key: input.idempotencyKey,
+    };
+    const seen = await tx.idempotencyKey.findUnique({
+      where: { scope_key: key },
+    });
+
+    if (seen) return { status: "existing" } as const;
+
+    const workOrder = await tx.workOrder.findFirst({
+      where: { id: input.workOrderId, assignedUserId: input.userId },
+      include: { proofRecords: { select: { id: true } } },
+    });
+
+    if (!workOrder) return { status: "not_found" } as const;
+
+    if (!transitionAllowed(workOrder.status, input.status))
+      return { status: "wrong_state", from: workOrder.status } as const;
+
+    const missing = statusBlockers(
+      input.status,
+      input.note,
+      workOrder.proofRecords.length,
+    );
+
+    if (missing.length > 0) return { status: "missing", missing } as const;
+
+    await tx.workOrder.update({
+      where: { id: workOrder.id },
+      data: {
+        status: input.status,
+        blockedReason: input.status === "blocked" ? input.note : null,
+        completionNote:
+          input.status === "completed" ? input.note : workOrder.completionNote,
+        history: [
+          ...historyEntrySchema.array().parse(workOrder.history),
+          {
+            at: input.now.toISOString(),
+            actor: FITTER_ACTOR,
+            action: input.status,
+            note: input.note,
+          },
+        ],
+      },
+    });
+
+    if (input.status === "completed" || input.status === "blocked")
+      await tx.serviceEvent.create({
+        data: {
+          organisationId: workOrder.organisationId,
+          contractId: workOrder.contractId,
+          campaignId: workOrder.campaignId,
+          workOrderId: workOrder.id,
+          at: input.now,
+          type:
+            input.status === "completed"
+              ? `${workOrder.type}_completed`
+              : `${workOrder.type}_blocked`,
+          title:
+            input.status === "completed"
+              ? completedTitle(workOrder.type)
+              : "Job blocked",
+          clientVisible: isClientVisibleStatus(input.status),
+          clientSummary: isClientVisibleStatus(input.status)
+            ? COMPLETION_SUMMARY
+            : null,
+        },
+      });
+
+    await tx.idempotencyKey.create({
+      data: { ...key, recordId: workOrder.id },
+    });
+
+    return { status: "updated" } as const;
+  });
+
+type ProofInput = {
+  workOrderId: string;
+  userId: string;
+  fileName: string;
+  previewUrl: string;
+  completionNote: string;
+  idempotencyKey: string;
+  now: Date;
+};
+
+export const createProof = (input: ProofInput) =>
+  prisma.$transaction(async (tx) => {
+    const key = {
+      scope: IDEMPOTENCY_SCOPE.workOrderProof,
+      key: input.idempotencyKey,
+    };
+    const seen = await tx.idempotencyKey.findUnique({
+      where: { scope_key: key },
+    });
+
+    if (seen) return { status: "existing", proofId: seen.recordId } as const;
+
+    const workOrder = await tx.workOrder.findFirst({
+      where: { id: input.workOrderId, assignedUserId: input.userId },
+    });
+
+    if (!workOrder) return { status: "not_found" } as const;
+
+    if (workOrder.status === "completed")
+      return { status: "already_completed" } as const;
+
+    const proof = await tx.proofRecord.create({
+      data: {
+        workOrderId: workOrder.id,
+        createdByUserId: input.userId,
+        fileName: input.fileName,
+        previewUrl: input.previewUrl,
+        completionNote: input.completionNote,
+        createdAt: input.now,
+      },
+    });
+
+    await tx.workOrder.update({
+      where: { id: workOrder.id },
+      data: {
+        history: [
+          ...historyEntrySchema.array().parse(workOrder.history),
+          {
+            at: input.now.toISOString(),
+            actor: FITTER_ACTOR,
+            action: "proof_uploaded",
+            note: input.fileName,
+          },
+        ],
+      },
+    });
+
+    await tx.idempotencyKey.create({ data: { ...key, recordId: proof.id } });
+
+    return { status: "created", proofId: proof.id } as const;
+  });

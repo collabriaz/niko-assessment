@@ -90,11 +90,19 @@ export const getContractForOrganisation = async (
       clientSummary: event.clientSummary,
     })),
     proofRecords: proofRecords.map((proof) => ({
-      ...proof,
+      id: proof.id,
+      workOrderId: proof.workOrderId,
+      fileName: proof.fileName,
+      previewUrl: proof.previewUrl,
+      completionNote: proof.completionNote,
       createdAt: proof.createdAt.toISOString(),
     })),
     clientRequests: contract.clientRequests.map((request) => ({
-      ...request,
+      id: request.id,
+      contractId: request.contractId,
+      type: request.type,
+      status: request.status,
+      summary: request.summary,
       createdAt: request.createdAt.toISOString(),
     })),
   };

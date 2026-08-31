@@ -17,7 +17,7 @@ export const FITTER_STATUSES = [
   "completed",
 ] as const;
 
-const TRANSITIONS: Record<WorkOrderStatus, WorkOrderStatus[]> = {
+const TRANSITIONS: Record<string, WorkOrderStatus[]> = {
   draft: ["assigned"],
   assigned: ["travelling", "on_site", "blocked"],
   travelling: ["on_site", "blocked"],
@@ -26,8 +26,10 @@ const TRANSITIONS: Record<WorkOrderStatus, WorkOrderStatus[]> = {
   completed: [],
 };
 
-export const transitionAllowed = (from: WorkOrderStatus, to: WorkOrderStatus) =>
-  TRANSITIONS[from].includes(to);
+export const nextStatuses = (from: string) => TRANSITIONS[from] ?? [];
+
+export const transitionAllowed = (from: string, to: WorkOrderStatus) =>
+  nextStatuses(from).includes(to);
 
 export const statusBlockers = (
   status: WorkOrderStatus,

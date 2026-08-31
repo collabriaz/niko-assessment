@@ -44,6 +44,14 @@ export const currentManager = async (request: Request) => {
   return user;
 };
 
+export const currentFitter = async (request: Request) => {
+  const user = await currentUser(request);
+
+  if (!user || user.role !== "fitter") return null;
+
+  return user;
+};
+
 export const sessionUser = async () => {
   const userId = await cookieUserId();
 

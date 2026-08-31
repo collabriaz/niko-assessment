@@ -19,6 +19,7 @@ Delivery submitted:
 | 2026-09-01 | 00:15 - 01:05 | 50m | 0 | Audited the build and the plan against the brief, then built the management booking-request inbox, detail and decision: domain state machine, org-wide reads, `GET`/`PATCH` endpoints, the manager shell, the client/account detail page, and 36 new tests |
 | 2026-09-01 | 01:05 - 01:25 | 20m | 0 | Added the attention-led management dashboard: counts, attention items, upcoming field work, and the work-order read mapper that omits internal notes |
 | 2026-09-01 | 01:25 - 02:05 | 40m | 0 | Contract draft and issue: money reconciliation in the domain, both endpoints with idempotency, campaign creation at issue, the draft form and contract pages, and the connected request-to-acceptance test |
+| 2026-09-01 | 02:05 - 03:00 | 55m | 0 | Scenarios C and D: work-order state machine, creation and management field-work pages, the four mobile endpoints, the fitter app, the client-response leak fix, and required checks 7 and 8 |
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.
@@ -194,6 +195,24 @@ agent was running while I was not watching.
   required check 5's territory.
 - **What check proved the correction:** the full suite was run twice back to back and reported
   145 of 145 both times.
+
+### 10. Whole database rows spread into a client-facing response
+
+- **What the tool generated:** `getContractForOrganisation` ended its proof and client-request
+  mappers with `...proof` and `...request` rather than naming fields.
+- **Why it mattered:** the spread sent the client `ProofRecord.createdByUserId`, which names the
+  staff member who did the work, and `ClientRequest.history`, which is where management's own
+  decision notes will land as soon as management can answer a change request. Section 6 draws
+  the line at safe summaries of verified state, and a spread answers that question with
+  "whatever columns happen to exist", including ones added later.
+- **How it was noticed:** planning the fitter surface meant proof records would reach the client
+  view for the first time, so the client mappers were read before writing to them rather than
+  after. The neighbouring `toWorkOrder` already names its fields to keep `internalNotes` out,
+  so the inconsistency was visible once the two were compared.
+- **What changed:** both mappers now list their fields explicitly. `createdByUserId` and the
+  client-request history no longer leave the data layer.
+- **What check proved the correction:** the completion test serialises the whole client contract
+  response and asserts it contains neither `createdByUserId` nor the work order's internal note.
 
 ## Prompts worth quoting
 
