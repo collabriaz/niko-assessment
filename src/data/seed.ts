@@ -1,5 +1,5 @@
 import { fixtures } from "../domain/fixtures";
-import { IDEMPOTENCY_SCOPE } from "../domain/idempotency";
+import { IDEMPOTENCY_SCOPE } from "../lib/idempotency";
 import { prisma } from "../lib/prisma";
 
 const day = (value: string) => new Date(`${value}T00:00:00Z`);

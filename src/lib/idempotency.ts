@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const IDEMPOTENCY_SCOPE = {
   register: "auth.register",
   bookingRequest: "booking-request.create",
@@ -11,3 +13,8 @@ export const IDEMPOTENCY_SCOPE = {
 
 export type IdempotencyScope =
   (typeof IDEMPOTENCY_SCOPE)[keyof typeof IDEMPOTENCY_SCOPE];
+
+const idempotencyKeySchema = z.string().min(8);
+
+export const readIdempotencyKey = (request: Request) =>
+  idempotencyKeySchema.safeParse(request.headers.get("Idempotency-Key"));
