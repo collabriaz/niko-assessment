@@ -17,6 +17,7 @@ Delivery submitted:
 | 2026-08-31 | 19:45 - 20:55 | 1h 10m | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed, then the org-scoped reads, per-asset availability and the catalogue endpoints |
 | 2026-08-31 | 22:30 - 23:50 | 1h 20m | 0                | Built the HTTP smoke suite, chose and contrast-verified the Island Media palette, added the surface switcher, then the shortlist, booking-request submission and client portal summary |
 | 2026-09-01 | 00:15 - 01:05 | 50m | 0 | Audited the build and the plan against the brief, then built the management booking-request inbox, detail and decision: domain state machine, org-wide reads, `GET`/`PATCH` endpoints, the manager shell, the client/account detail page, and 36 new tests |
+| 2026-09-01 | 01:05 - 01:25 | 20m | 0 | Added the attention-led management dashboard: counts, attention items, upcoming field work, and the work-order read mapper that omits internal notes |
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.

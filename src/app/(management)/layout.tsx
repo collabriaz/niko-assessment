@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { sessionUser } from "@/lib/session";
 
-const MANAGEMENT_LINKS = [{ href: "/manage/requests", label: "Requests" }];
+const MANAGEMENT_LINKS = [
+  { href: "/manage/dashboard", label: "Dashboard" },
+  { href: "/manage/requests", label: "Requests" },
+];
 
 export default async function ManagementLayout({
   children,
