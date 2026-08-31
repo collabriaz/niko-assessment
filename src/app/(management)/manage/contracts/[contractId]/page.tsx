@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ContractManagementActions } from "@/components/contract-management-actions";
 import { IssueContractButton } from "@/components/issue-contract-button";
 import { StatusBadge } from "@/components/status-badge";
 import { WorkOrderForm } from "@/components/work-order-form";
@@ -94,6 +95,29 @@ export default async function ContractDetailPage({
           </ul>
         </section>
 
+        {contract.clientRequests.length > 0 && (
+          <section className="rounded-lg border bg-card p-5 shadow-xs">
+            <h2 className="font-semibold">What the client has asked for</h2>
+            <ul className="mt-4 space-y-3">
+              {contract.clientRequests.map((request) => (
+                <li
+                  key={request.id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p>{request.summary}</p>
+                    <p className="mt-0.5 text-muted-foreground">
+                      {humanise(request.type)} &middot;{" "}
+                      {formatDate(request.createdAt.slice(0, 10))}
+                    </p>
+                  </div>
+                  <StatusBadge status={request.status} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="rounded-lg border bg-card p-5 shadow-xs">
           <h2 className="font-semibold">History</h2>
           <ol className="mt-4 space-y-4">
@@ -134,6 +158,11 @@ export default async function ContractDetailPage({
             </p>
           )}
         </section>
+
+        <ContractManagementActions
+          contractId={contract.id}
+          status={contract.status}
+        />
 
         <section className="rounded-lg border bg-card p-5 shadow-xs">
           <h2 className="font-semibold">Campaign</h2>

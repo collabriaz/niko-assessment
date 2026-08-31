@@ -57,7 +57,9 @@ export const getManagementDashboard = async (now: Date) => {
     kind: "client_request",
     title: `${request.organisation.name} asked for a change`,
     detail: request.summary,
-    href: `/manage/clients/${request.organisationId}`,
+    href: request.contractId
+      ? `/manage/contracts/${request.contractId}`
+      : `/manage/clients/${request.organisationId}`,
   }));
 
   return {

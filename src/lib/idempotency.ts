@@ -6,6 +6,7 @@ export const IDEMPOTENCY_SCOPE = {
   clientContractAction: "client-contract.action",
   contractCreate: "contract.create",
   contractIssue: "contract.issue",
+  managementContractAction: "management-contract.action",
   workOrderCreate: "work-order.create",
   workOrderStatus: "work-order.status",
   workOrderProof: "work-order.proof",
