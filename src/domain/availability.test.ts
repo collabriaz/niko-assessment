@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { AvailabilityInput } from "./availability";
 import { checkProductAvailability, overlaps } from "./availability";
 import { fixtureClock, fixtures } from "./fixtures";
-import type { AvailabilityInput } from "./availability";
 
 const check = (productId: string, startDate: string, endDate: string) => {
   const product = fixtures.products.find((p) => p.id === productId);

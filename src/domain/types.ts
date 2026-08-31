@@ -46,7 +46,10 @@ export type ProofRecord = z.infer<typeof proofRecordSchema>;
 export type Fixtures = z.infer<typeof fixturesSchema>;
 
 export type AllocationModel = Product["allocationModel"];
-export type AvailabilityState = "available" | "unavailable" | "confirmation_required";
+export type AvailabilityState =
+  | "available"
+  | "unavailable"
+  | "confirmation_required";
 
 export type AvailabilitySummary = {
   state: AvailabilityState;
