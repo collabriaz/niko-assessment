@@ -18,6 +18,10 @@ export const getClientSummary = async (organisationId: string) => {
         orderBy: { at: "desc" },
         take: RECENT_SERVICE_EVENTS,
       },
+      bookingRequests: {
+        include: { product: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -56,6 +60,14 @@ export const getClientSummary = async (organisationId: string) => {
         detail: request.summary,
       })),
     ],
+    bookingRequests: organisation.bookingRequests.map((request) => ({
+      id: request.id,
+      productName: request.product.name,
+      startDate: dateOnly(request.startDate),
+      endDate: dateOnly(request.endDate),
+      status: request.status,
+      createdAt: request.createdAt.toISOString(),
+    })),
     recentServiceEvents: organisation.serviceEvents.map((event) => ({
       id: event.id,
       at: event.at.toISOString(),

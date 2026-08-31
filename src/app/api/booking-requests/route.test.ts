@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { POST as shortlist } from "@/app/api/client/shortlist/route";
+import { GET as clientSummary } from "@/app/api/client/summary/route";
+import { GET as managementInbox } from "@/app/api/management/booking-requests/route";
+import { registerClient } from "@/data/users";
+import { fixtureClock } from "@/domain/fixtures";
 import { prisma } from "@/lib/prisma";
 import { POST } from "./route";
 
@@ -7,6 +12,10 @@ const SILVERLINE_CLIENT = "user-client-silverline";
 const MANAGER = "user-manager-01";
 const OBJECTIVE = `Probe objective ${randomUUID()}`;
 const key = () => `probe-key-${randomUUID()}`;
+
+const JOURNEY_PRODUCT = "product-hub-screen";
+const JOURNEY_START = "2027-04-01";
+const JOURNEY_END = "2027-04-15";
 
 const body = {
   productId: "product-bus-rear",
@@ -33,6 +42,31 @@ const submit = (
     }),
   );
 
+let journeyUserId = "";
+let journeyOrganisationId = "";
+let journeyOrganisationName = "";
+
+beforeAll(async () => {
+  journeyOrganisationName = `Journey Co ${randomUUID()}`;
+
+  const registered = await registerClient({
+    organisationName: journeyOrganisationName,
+    contactName: "Journey Contact",
+    email: `journey-${randomUUID()}@example.test`,
+    idempotencyKey: `journey-reg-${randomUUID()}`,
+    now: fixtureClock,
+  });
+
+  if (registered.status !== "created") throw new Error("probe setup failed");
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: registered.userId },
+  });
+
+  journeyUserId = user.id;
+  journeyOrganisationId = user.organisationId ?? "";
+});
+
 afterAll(async () => {
   const made = await prisma.bookingRequest.findMany({
     where: { objective: OBJECTIVE },
@@ -42,6 +76,16 @@ afterAll(async () => {
 
   await prisma.idempotencyKey.deleteMany({ where: { recordId: { in: ids } } });
   await prisma.bookingRequest.deleteMany({ where: { id: { in: ids } } });
+  await prisma.shortlistItem.deleteMany({
+    where: { organisationId: journeyOrganisationId },
+  });
+  await prisma.idempotencyKey.deleteMany({
+    where: { recordId: journeyUserId },
+  });
+  await prisma.user.deleteMany({ where: { id: journeyUserId } });
+  await prisma.organisation.deleteMany({
+    where: { id: journeyOrganisationId },
+  });
 });
 
 describe("POST /api/booking-requests", () => {
@@ -114,5 +158,89 @@ describe("POST /api/booking-requests", () => {
 
   it("refuses a request with no prototype user", async () => {
     expect((await submit(body, key(), null)).status).toBe(403);
+  });
+});
+
+describe("the journey a new client takes from the catalogue to management", () => {
+  it("carries a shortlisted product and its dates into the management inbox", async () => {
+    const saved = await shortlist(
+      new Request("http://localhost/api/client/shortlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Prototype-User-Id": journeyUserId,
+        },
+        body: JSON.stringify({
+          productId: JOURNEY_PRODUCT,
+          startDate: JOURNEY_START,
+          endDate: JOURNEY_END,
+        }),
+      }),
+    );
+
+    expect(saved.status).toBe(200);
+
+    const shortlisted = (await saved.json()).items.find(
+      (item: { product: { id: string } }) =>
+        item.product.id === JOURNEY_PRODUCT,
+    );
+
+    expect(shortlisted).toMatchObject({
+      startDate: JOURNEY_START,
+      endDate: JOURNEY_END,
+    });
+    expect(shortlisted.product.availability.state).toBe("available");
+
+    const submitted = await submit(
+      {
+        productId: shortlisted.product.id,
+        startDate: shortlisted.startDate,
+        endDate: shortlisted.endDate,
+        budget: 1400,
+        objective: OBJECTIVE,
+      },
+      key(),
+      journeyUserId,
+    );
+    const request = await submitted.json();
+
+    expect(submitted.status).toBe(201);
+    expect(request.status).toBe("submitted");
+
+    const { items } = await (
+      await managementInbox(
+        new Request("http://localhost/api/management/booking-requests", {
+          headers: { "X-Prototype-User-Id": MANAGER },
+        }),
+      )
+    ).json();
+
+    expect(
+      items.find((item: { id: string }) => item.id === request.id),
+    ).toMatchObject({
+      organisationName: journeyOrganisationName,
+      productName: "Hub portrait screen network",
+      status: "submitted",
+    });
+
+    const summary = await (
+      await clientSummary(
+        new Request("http://localhost/api/client/summary", {
+          headers: { "X-Prototype-User-Id": journeyUserId },
+        }),
+      )
+    ).json();
+
+    expect(
+      summary.bookingRequests.find(
+        (item: { id: string }) => item.id === request.id,
+      ),
+    ).toMatchObject({
+      productName: "Hub portrait screen network",
+      startDate: JOURNEY_START,
+      endDate: JOURNEY_END,
+      status: "submitted",
+    });
+    expect(summary.contracts).toEqual([]);
   });
 });

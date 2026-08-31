@@ -53,3 +53,12 @@ export const removeFromShortlist = async (
 
   return count > 0;
 };
+
+export const isShortlisted = async (
+  organisationId: string,
+  productId: string,
+) =>
+  (await prisma.shortlistItem.findUnique({
+    where: { organisationId_productId: { organisationId, productId } },
+    select: { id: true },
+  })) !== null;

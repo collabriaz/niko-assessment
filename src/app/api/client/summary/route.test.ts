@@ -21,6 +21,20 @@ describe("GET /api/client/summary", () => {
     expect(body.recentServiceEvents).toEqual([]);
   });
 
+  it("shows a client with no contracts the request they are waiting on", async () => {
+    const body = await (await summary("user-client-silverline")).json();
+
+    expect(body.bookingRequests).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "request-001",
+          productName: "Bus rear panel",
+          status: "submitted",
+        }),
+      ]),
+    );
+  });
+
   it("raises an issued contract as something the client must act on", async () => {
     const body = await (await summary("user-client-lighthouse")).json();
 

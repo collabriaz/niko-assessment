@@ -118,6 +118,39 @@ export default async function PortalPage() {
         )}
       </section>
 
+      {summary.bookingRequests.length > 0 && (
+        <section>
+          <h2 className="font-semibold">Your requests</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A request is not a booking. Nothing is reserved until Island Media
+            Co issues a contract and you accept it.
+          </p>
+          <ul className="mt-3 divide-y rounded-lg border bg-card shadow-xs">
+            {summary.bookingRequests.map((request) => (
+              <li
+                key={request.id}
+                className="flex flex-wrap items-center gap-4 px-5 py-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{request.productName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(request.startDate)} to{" "}
+                    {formatDate(request.endDate)}
+                  </p>
+                  {request.status === "information_required" && (
+                    <p className="mt-1 text-sm text-warning">
+                      Island Media Co has asked for more information and will
+                      contact you.
+                    </p>
+                  )}
+                </div>
+                <StatusBadge status={request.status} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section>
         <h2 className="font-semibold">Recent service activity</h2>
         {summary.recentServiceEvents.length === 0 ? (

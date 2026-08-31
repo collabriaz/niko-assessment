@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AvailabilityBadge } from "@/components/availability-badge";
+import { ShortlistButton } from "@/components/shortlist-button";
 import { getProduct } from "@/data/products";
+import { isShortlisted } from "@/data/shortlist";
 import { defaultDateRange } from "@/domain/catalogue";
 import { fixtureClock } from "@/domain/fixtures";
 import { formatDate, humanise } from "@/lib/format";
+import { sessionUser } from "@/lib/session";
 
 const single = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
@@ -33,6 +36,11 @@ export default async function ProductPage({
   if (!product) notFound();
 
   const spec = creativeSpecEntries(product.creativeSpec);
+  const user = await sessionUser();
+  const organisationId = user?.role === "client" ? user.organisationId : null;
+  const shortlisted = organisationId
+    ? await isShortlisted(organisationId, product.id)
+    : false;
 
   return (
     <div className="space-y-8">
@@ -74,6 +82,44 @@ export default async function ProductPage({
           </dd>
         </div>
       </dl>
+
+      {organisationId ? (
+        <div>
+          <ShortlistButton
+            productId={product.id}
+            startDate={startDate}
+            endDate={endDate}
+            shortlisted={shortlisted}
+          />
+          <p className="mt-2 text-sm text-muted-foreground">
+            {shortlisted ? (
+              <>
+                Saved for these dates. Send a non-binding request from your{" "}
+                <Link
+                  href="/shortlist"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  shortlist
+                </Link>
+                .
+              </>
+            ) : (
+              "Shortlisting saves these dates so you can request them later."
+            )}
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          <Link
+            href="/register"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Create an account
+          </Link>{" "}
+          to shortlist these dates and send a non-binding request. No contract
+          is needed.
+        </p>
+      )}
 
       <section>
         <h2 className="font-semibold">Availability</h2>
