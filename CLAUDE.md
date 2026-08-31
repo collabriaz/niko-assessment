@@ -211,7 +211,9 @@ Reach for the comment only when that fails. When in doubt, leave it out.
 ## Next.js / React
 
 - **Server Components by default.** `'use client'` only for browser APIs, event handlers or hooks.
-- Forms use React Hook Form + Zod. No manual validation.
+- Forms hold their fields in `useState` and post to the route handler. Zod validates on the
+  server and returns 422 with field errors; the form renders those. No client validation
+  library, and no hand-rolled validation rules that the server does not already enforce.
 - **No pass-through state** - if only one child needs data, that child fetches it.
 - shadcn/Radix for UI primitives. Do not hand-build a dialog, select or toast.
 - One design-token file shared by all three surfaces. §10.8 grades a consistent visual style;
