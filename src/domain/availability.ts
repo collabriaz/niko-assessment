@@ -1,23 +1,74 @@
-import type {
-  Asset,
-  AvailabilitySummary,
-  Booking,
-  CapacityPool,
-  Hold,
-  Outage,
-  Product,
-} from "./types";
+import type { AvailabilitySummary } from "./types";
 
 const VERIFICATION_MAX_AGE_DAYS = 30;
 const DAY_MS = 86_400_000;
 
+// These describe only what the calculation reads, so a fixture record and a
+// mapped database row both satisfy them. A hold has no status field here on
+// purpose: the rule is expiresAt, and fixture hold-002 is an expired hold
+// still marked "active".
+type AvailabilityAsset = {
+  id: string;
+  productId: string;
+  status: string;
+  verifiedAt: string | null;
+  note?: string | null;
+};
+
+type AvailabilityBooking = {
+  assetId?: string | null;
+  capacityPoolId?: string | null;
+  capacityUnits?: number | null;
+  startDate: string;
+  endDate: string;
+  status: string;
+};
+
+type AvailabilityHold = {
+  assetId?: string | null;
+  capacityPoolId?: string | null;
+  capacityUnits?: number | null;
+  startDate: string;
+  endDate: string;
+  expiresAt: string;
+};
+
+type AvailabilityOutage = {
+  assetId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: string;
+};
+
+type AvailabilityPool = {
+  id: string;
+  capacity: number;
+  status: string;
+  verifiedAt: string | null;
+};
+
+export type AssetAvailabilityInput = {
+  asset: AvailabilityAsset;
+  bookings: AvailabilityBooking[];
+  holds: AvailabilityHold[];
+  outages: AvailabilityOutage[];
+  startDate: string;
+  endDate: string;
+  now: Date;
+};
+
 export type AvailabilityInput = {
-  product: Product;
-  assets: Asset[];
-  bookings: Booking[];
-  holds: Hold[];
-  outages: Outage[];
-  pools: CapacityPool[];
+  product: {
+    id: string;
+    allocationModel: string;
+    capacityPoolId?: string | null;
+  };
+  assets: AvailabilityAsset[];
+  bookings: AvailabilityBooking[];
+  holds: AvailabilityHold[];
+  outages: AvailabilityOutage[];
+  pools: AvailabilityPool[];
   startDate: string;
   endDate: string;
   now: Date;
@@ -33,12 +84,101 @@ export const overlaps = (
 
 // A hold blocks only while it has not expired. The `status` field lies: the
 // fixtures contain an expired hold still marked "active".
-const isLive = (hold: Hold, now: Date) => new Date(hold.expiresAt) > now;
+const isLive = (hold: AvailabilityHold, now: Date) =>
+  new Date(hold.expiresAt) > now;
 
 const isStale = (verifiedAt: string | null, now: Date) =>
   verifiedAt === null ||
   now.getTime() - new Date(verifiedAt).getTime() >
     VERIFICATION_MAX_AGE_DAYS * DAY_MS;
+
+// Reasons are shown in the public catalogue, so they never name the campaign
+// occupying an asset. booking-001 is another advertiser's "Northstar launch".
+const blockingReason = ({
+  asset,
+  bookings,
+  holds,
+  outages,
+  startDate,
+  endDate,
+  now,
+}: AssetAvailabilityInput) => {
+  if (
+    bookings.some(
+      (b) =>
+        b.assetId === asset.id &&
+        b.status === "confirmed" &&
+        overlaps(b.startDate, b.endDate, startDate, endDate),
+    )
+  )
+    return "Booked for these dates.";
+
+  if (
+    holds.some(
+      (h) =>
+        h.assetId === asset.id &&
+        isLive(h, now) &&
+        overlaps(h.startDate, h.endDate, startDate, endDate),
+    )
+  )
+    return "On hold for these dates.";
+
+  const outage = outages.find(
+    (o) =>
+      o.assetId === asset.id &&
+      o.status === "confirmed" &&
+      overlaps(o.startDate, o.endDate, startDate, endDate),
+  );
+  if (outage) return `Out of service: ${outage.reason}.`;
+
+  return null;
+};
+
+export const checkAssetAvailability = (
+  input: AssetAvailabilityInput,
+): AvailabilitySummary => {
+  const { asset, now } = input;
+  const base = {
+    calculatedAt: now.toISOString(),
+    availableCapacity: null,
+    totalCapacity: null,
+    freshestVerificationAt: asset.verifiedAt,
+  };
+
+  if (asset.status !== "active")
+    return {
+      ...base,
+      state: "unavailable",
+      availableAssetCount: 0,
+      reason: "This asset is retired.",
+    };
+
+  const blocked = blockingReason(input);
+  if (blocked)
+    return {
+      ...base,
+      state: "unavailable",
+      availableAssetCount: 0,
+      reason: blocked,
+    };
+
+  if (isStale(asset.verifiedAt, now))
+    return {
+      ...base,
+      state: "confirmation_required",
+      availableAssetCount: 1,
+      reason:
+        asset.note ??
+        "Asset verification is out of date. Confirm with the media owner before approval.",
+    };
+
+  return {
+    ...base,
+    state: "available",
+    availableAssetCount: 1,
+    reason: "Free for these dates.",
+  };
+};
 
 export const checkProductAvailability = (
   input: AvailabilityInput,
@@ -64,24 +204,15 @@ const checkExclusive = ({
 
   const free = candidates.filter(
     (asset) =>
-      !bookings.some(
-        (b) =>
-          b.assetId === asset.id &&
-          b.status === "confirmed" &&
-          overlaps(b.startDate, b.endDate, startDate, endDate),
-      ) &&
-      !holds.some(
-        (h) =>
-          h.assetId === asset.id &&
-          isLive(h, now) &&
-          overlaps(h.startDate, h.endDate, startDate, endDate),
-      ) &&
-      !outages.some(
-        (o) =>
-          o.assetId === asset.id &&
-          o.status === "confirmed" &&
-          overlaps(o.startDate, o.endDate, startDate, endDate),
-      ),
+      blockingReason({
+        asset,
+        bookings,
+        holds,
+        outages,
+        startDate,
+        endDate,
+        now,
+      }) === null,
   );
 
   const base = {
