@@ -8,18 +8,22 @@ misleading time reporting as an integrity failure.
 
 ## Time record
 
-Delivery started: 2026-08-31, 13:15
+Delivery started: 2026-08-31, 09:15
 Delivery submitted:
 
 | Date       | Session       | Active | Unattended agent | What                                                                                                  |
 | ---------- | ------------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------- |
-| 2026-08-31 | 13:15 - 14:45 | 1h 30m | 0                | Read the brief, mapped the fixture traps, chose the stack, wrote the availability engine and its tests |
-| 2026-08-31 | 19:45 - 20:55 | 1h 10m | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed, then the org-scoped reads, per-asset availability and the catalogue endpoints |
-| 2026-08-31 | 22:30 - 23:50 | 1h 20m | 0                | Built the HTTP smoke suite, chose and contrast-verified the Island Media palette, added the surface switcher, then the shortlist, booking-request submission and client portal summary |
-| 2026-09-01 | 00:15 - 01:05 | 50m | 0 | Audited the build and the plan against the brief, then built the management booking-request inbox, detail and decision: domain state machine, org-wide reads, `GET`/`PATCH` endpoints, the manager shell, the client/account detail page, and 36 new tests |
-| 2026-09-01 | 01:05 - 01:25 | 20m | 0 | Added the attention-led management dashboard: counts, attention items, upcoming field work, and the work-order read mapper that omits internal notes |
-| 2026-09-01 | 01:25 - 02:05 | 40m | 0 | Contract draft and issue: money reconciliation in the domain, both endpoints with idempotency, campaign creation at issue, the draft form and contract pages, and the connected request-to-acceptance test |
-| 2026-09-01 | 02:05 - 03:00 | 55m | 0 | Scenarios C and D: work-order state machine, creation and management field-work pages, the four mobile endpoints, the fitter app, the client-response leak fix, and required checks 7 and 8 |
+| 2026-08-31 | 09:15 - 10:45 | 1h 30m | 0                | Read the brief, mapped the fixture traps, chose the stack, wrote the availability engine and its tests |
+| 2026-08-31 | 15:45 - 16:55 | 1h 10m | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed, then the org-scoped reads, per-asset availability and the catalogue endpoints |
+| 2026-08-31 | 18:30 - 19:50 | 1h 20m | 0                | Built the HTTP smoke suite, chose and contrast-verified the Island Media palette, added the surface switcher, then the shortlist, booking-request submission and client portal summary |
+| 2026-08-31 | 20:15 - 21:05 | 50m | 0 | Audited the build and the plan against the brief, then built the management booking-request inbox, detail and decision: domain state machine, org-wide reads, `GET`/`PATCH` endpoints, the manager shell, the client/account detail page, and 36 new tests |
+| 2026-08-31 | 21:05 - 21:25 | 20m | 0 | Added the attention-led management dashboard: counts, attention items, upcoming field work, and the work-order read mapper that omits internal notes |
+| 2026-08-31 | 21:25 - 22:05 | 40m | 0 | Contract draft and issue: money reconciliation in the domain, both endpoints with idempotency, campaign creation at issue, the draft form and contract pages, and the connected request-to-acceptance test |
+| 2026-08-31 | 22:05 - 23:00 | 55m | 0 | Scenarios C and D: work-order state machine, creation and management field-work pages, the four mobile endpoints, the fitter app, the client-response leak fix, and required checks 7 and 8 |
+| 2026-08-31 | 22:35 - 23:30 | 55m | 0 | Audited the whole build against the brief, then closed Scenario A6: the shortlist page and button, the booking-request form, the portal request list, and the connected shortlist-to-inbox test. Caught a shared-fixture race in the new test and a hook timeout it exposed, corrections 11 and 12 |
+
+All times are Europe/London, the same offset as the Europe/Jersey assumption the
+application states. The development machine runs at UTC+5, so entries are converted.
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.
@@ -231,6 +235,39 @@ Two directions that changed the work materially:
   changes to two, by holding prototype proof in the OpenAPI's existing `previewUrl` as a
   capped base64 data URI rather than adding columns. Section 13 does not reward feature
   count, so pruning against the brief is worth more than the features were.
+
+### 11. A journey test that wrote to a shared fixture organisation
+
+- **What the tool generated:** the shortlist-to-inbox journey test shortlisted a product as
+  `user-client-silverline`, writing a `ShortlistItem` onto `org-silverline`.
+- **Why it was wrong:** `src/app/api/client/shortlist/route.test.ts` asserts that Silverline's
+  shortlist is exactly `["product-bus-rear"]` and then exactly `[]`. Vitest runs files in
+  parallel, so the journey's row appeared inside another file's assertions. This is the same
+  defect as correction 9, on a different table.
+- **How it was noticed:** `pnpm test` failed on `expected [ { ... } ] to deeply equal []`.
+- **What changed:** the first fix loosened both of the other file's assertions, which is the
+  remedy correction 9 had already considered and rejected. It was reverted. The journey test
+  now registers its own throwaway organisation and client in `beforeAll` through the real
+  `registerClient` path and deletes them in `afterAll`, leaving the fixture organisations
+  read-only. A freshly registered client is also the more faithful subject: section 4 A.4 is
+  about an account created with no contract.
+- **What check proved the correction:** the full suite run three times back to back, 179 of
+  179 each time, with the other file's original assertions restored.
+
+### 12. A hook timeout the config never set
+
+- **What surfaced:** adding that `beforeAll` pushed
+  `src/app/api/client/contracts/[contractId]/actions/route.test.ts` over `Hook timed out in
+  10000ms`, skipping its 12 tests. One run failed, the next passed.
+- **Why it happened:** the integration project sets `testTimeout: 30_000` for remote Neon
+  latency but never set `hookTimeout`, which defaults to 10 seconds. That file's `beforeAll`
+  is six sequential writes and its `afterAll` is nine more, so it sat just under the default
+  until one more parallel file was added.
+- **What changed:** `hookTimeout: 30_000` on the integration project, matching the test
+  timeout that was already there for the same reason. The hooks were not made to do less
+  work, because the work is real setup, and the assertions were not touched.
+- **What check proved the correction:** three consecutive full runs at 179 of 179. A single
+  green run was not accepted as evidence, because the failure was intermittent.
 
 ## Open assumptions to carry into the README
 
