@@ -6,6 +6,7 @@ const MANAGEMENT_LINKS = [
   { href: "/manage/dashboard", label: "Dashboard" },
   { href: "/manage/requests", label: "Requests" },
   { href: "/manage/contracts", label: "Contracts" },
+  { href: "/manage/work-orders", label: "Field work" },
 ];
 
 export default async function ManagementLayout({

@@ -324,7 +324,7 @@ export const getContractForManagement = async (contractId: string) => {
   const contract = await prisma.contract.findUnique({
     where: { id: contractId },
     include: {
-      items: true,
+      items: { include: { asset: { select: { id: true, name: true } } } },
       organisation: { select: { id: true, name: true } },
       campaigns: { include: { booking: true } },
       bookingRequest: { select: { id: true } },
@@ -350,6 +350,9 @@ export const getContractForManagement = async (contractId: string) => {
     acceptedAt: contract.acceptedAt?.toISOString() ?? null,
     activatedAt: contract.activatedAt?.toISOString() ?? null,
     items: contract.items.map(toItem),
+    assetOptions: contract.items
+      .map((item) => item.asset)
+      .filter((asset) => asset !== null),
     history: contract.history,
     campaign: campaign && {
       id: campaign.id,

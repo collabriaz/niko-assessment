@@ -2,8 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IssueContractButton } from "@/components/issue-contract-button";
 import { StatusBadge } from "@/components/status-badge";
+import { WorkOrderForm } from "@/components/work-order-form";
 import { getContractForManagement } from "@/data/contracts";
+import { listFitters } from "@/data/users";
 import { contractIssuable } from "@/domain/contracts";
+import { fixtureClock } from "@/domain/fixtures";
 import { historyEntrySchema } from "@/domain/schemas";
 import { formatDate, formatMoney, humanise } from "@/lib/format";
 import { sessionUser } from "@/lib/session";
@@ -26,6 +29,7 @@ export default async function ContractDetailPage({
   if (!contract) notFound();
 
   const history = historyEntrySchema.array().parse(contract.history);
+  const fitters = await listFitters();
 
   return (
     <main className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -160,6 +164,17 @@ export default async function ContractDetailPage({
             </p>
           )}
         </section>
+
+        {contract.campaign &&
+          contract.campaign.status !== "awaiting_contract_acceptance" && (
+            <WorkOrderForm
+              campaignId={contract.campaign.id}
+              contractId={contract.id}
+              assetOptions={contract.assetOptions}
+              fitters={fitters}
+              defaultDate={fixtureClock.toISOString().slice(0, 10)}
+            />
+          )}
       </div>
     </main>
   );

@@ -11,6 +11,13 @@ export const listPrototypeUsers = () =>
     orderBy: [{ role: "asc" }, { name: "asc" }],
   });
 
+export const listFitters = () =>
+  prisma.user.findMany({
+    where: { role: "fitter", status: "active" },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
 export const getSession = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
