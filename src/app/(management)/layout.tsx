@@ -5,6 +5,7 @@ import { sessionUser } from "@/lib/session";
 const MANAGEMENT_LINKS = [
   { href: "/manage/dashboard", label: "Dashboard" },
   { href: "/manage/requests", label: "Requests" },
+  { href: "/manage/contracts", label: "Contracts" },
 ];
 
 export default async function ManagementLayout({

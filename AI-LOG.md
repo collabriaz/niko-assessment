@@ -18,6 +18,7 @@ Delivery submitted:
 | 2026-08-31 | 22:30 - 23:50 | 1h 20m | 0                | Built the HTTP smoke suite, chose and contrast-verified the Island Media palette, added the surface switcher, then the shortlist, booking-request submission and client portal summary |
 | 2026-09-01 | 00:15 - 01:05 | 50m | 0 | Audited the build and the plan against the brief, then built the management booking-request inbox, detail and decision: domain state machine, org-wide reads, `GET`/`PATCH` endpoints, the manager shell, the client/account detail page, and 36 new tests |
 | 2026-09-01 | 01:05 - 01:25 | 20m | 0 | Added the attention-led management dashboard: counts, attention items, upcoming field work, and the work-order read mapper that omits internal notes |
+| 2026-09-01 | 01:25 - 02:05 | 40m | 0 | Contract draft and issue: money reconciliation in the domain, both endpoints with idempotency, campaign creation at issue, the draft form and contract pages, and the connected request-to-acceptance test |
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.
@@ -174,6 +175,25 @@ agent was running while I was not watching.
 - **What check proved the correction:** the six failures went green and the full suite reports
   120 passing. The same decision path that returned `503` now returns `200` with the manager
   history entry attached.
+
+### 9. Test probes that quietly broke another file's fixture invariant
+
+- **What the tool generated:** the contract draft and issue probes created their booking
+  requests as `user-client-silverline`, so every probe attached a contract to `org-silverline`.
+- **Why it mattered:** `org-silverline` is the fixture's deliberate no-contract organisation.
+  Two other assertions rest on that: `src/data/contracts.test.ts` expects an empty contract list
+  for it, and the management request-detail test expects `contractCount` to be `0`. Vitest runs
+  files in parallel, so the suite passed or failed depending on which file won the race.
+- **How it was noticed:** one run reported 144 of 145 passing and the next reported 145 of 145
+  with no code change in between. A suite that disagrees with itself is a defect in its own
+  right, so the run was repeated rather than accepted.
+- **What changed:** each probe file now registers its own throwaway organisation and client in
+  `beforeAll` through the real `registerClient` path, and deletes both in `afterAll`. The
+  shared fixture organisations are left read-only. Loosening the two assertions was rejected:
+  they guard the brief's requirement that a client with no contracts still works, which is
+  required check 5's territory.
+- **What check proved the correction:** the full suite was run twice back to back and reported
+  145 of 145 both times.
 
 ## Prompts worth quoting
 

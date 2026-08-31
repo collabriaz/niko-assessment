@@ -23,3 +23,10 @@ export const acceptedCampaignStage = (contractStatus: string) => ({
   status: contractStatus === "active" ? "active" : "scheduled",
   currentStage: "contract_accepted",
 });
+
+const PENCE = 100;
+
+export const contractTotal = (lineTotals: number[]) =>
+  Math.round(lineTotals.reduce((sum, line) => sum + line, 0) * PENCE) / PENCE;
+
+export const contractIssuable = (status: string) => status === "draft";

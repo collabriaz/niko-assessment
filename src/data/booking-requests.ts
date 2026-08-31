@@ -195,6 +195,32 @@ const requestAvailability = (
   });
 };
 
+const assetOptionsFor = (
+  product: ProductRow,
+  startDate: string,
+  endDate: string,
+  now: Date,
+) => {
+  if (product.allocationModel === "capacity_pool") return [];
+
+  const inventory = toAvailabilityInventory(product);
+
+  return inventory.assets.map((asset) => ({
+    id: asset.id,
+    name: product.assets.find((raw) => raw.id === asset.id)?.name ?? asset.id,
+    status: asset.status,
+    availability: checkAssetAvailability({
+      asset,
+      bookings: inventory.bookings,
+      holds: inventory.holds,
+      outages: inventory.outages,
+      startDate,
+      endDate,
+      now,
+    }),
+  }));
+};
+
 const toManagementDetail = (request: ManagementRow, now: Date) => {
   const startDate = dateOnly(request.startDate);
   const endDate = dateOnly(request.endDate);
@@ -204,6 +230,8 @@ const toManagementDetail = (request: ManagementRow, now: Date) => {
     ...toBookingRequest(request),
     organisation: toOrganisation(request.organisation),
     product: toSearchResult(request.product, startDate, endDate, now),
+    assetOptions: assetOptionsFor(request.product, startDate, endDate, now),
+    capacityPoolId: request.product.capacityPool?.id ?? null,
     currentAvailability: requestAvailability(
       request.product,
       request.requestedAssetId,

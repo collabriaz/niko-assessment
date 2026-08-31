@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AvailabilityBadge } from "@/components/availability-badge";
+import { ContractDraftForm } from "@/components/contract-draft-form";
 import { RequestDecision } from "@/components/request-decision";
 import { StatusBadge } from "@/components/status-badge";
 import { getBookingRequestForManagement } from "@/data/booking-requests";
@@ -152,12 +153,28 @@ export default async function RequestDetailPage({
               no longer be decided.
             </p>
             {request.draftContractId && (
-              <p className="mt-3 text-sm">
-                Draft contract{" "}
-                <span className="font-mono">{request.draftContractId}</span>
-              </p>
+              <Link
+                href={`/manage/contracts/${request.draftContractId}`}
+                className="mt-3 inline-block font-mono text-sm text-primary underline-offset-4 hover:underline"
+              >
+                {request.draftContractId}
+              </Link>
             )}
           </section>
+        )}
+
+        {request.status === "approved" && !request.draftContractId && (
+          <ContractDraftForm
+            bookingRequestId={request.id}
+            organisationId={request.organisation.id}
+            productId={request.productId}
+            startDate={request.startDate}
+            endDate={request.endDate}
+            assetOptions={request.assetOptions}
+            capacityPoolId={request.capacityPoolId}
+            suggestedUnitRate={request.product.indicativeRate.amount}
+            rateUnit={request.product.indicativeRate.unit}
+          />
         )}
       </div>
     </main>

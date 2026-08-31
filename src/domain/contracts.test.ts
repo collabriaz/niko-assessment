@@ -3,8 +3,10 @@ import {
   acceptedContractStatus,
   clientActionAllowed,
   clientActionRequired,
+  contractIssuable,
+  contractTotal,
 } from "./contracts";
-import { fixtureClock } from "./fixtures";
+import { fixtureClock, fixtures } from "./fixtures";
 
 describe("what the client may do", () => {
   it("only offers accept and request changes on an issued contract", () => {
@@ -40,5 +42,36 @@ describe("what acceptance leaves the contract as", () => {
   it("activates when the contract has already started", () => {
     expect(acceptedContractStatus("2027-01-01", fixtureClock)).toBe("active");
     expect(acceptedContractStatus("2027-01-15", fixtureClock)).toBe("active");
+  });
+});
+
+describe("contract money", () => {
+  it("reconciles the total of every seeded contract", () => {
+    for (const contract of fixtures.contracts)
+      expect(contractTotal(contract.items.map((item) => item.lineTotal))).toBe(
+        contract.total,
+      );
+  });
+
+  it("does not derive a line total from the unit rate", () => {
+    const seeded = fixtures.contracts.find((c) => c.id === "contract-001");
+    const item = seeded?.items.at(0);
+
+    expect(item?.unitRate).toBe(1200);
+    expect(item?.quantity).toBe(1);
+    expect(item?.lineTotal).toBe(3600);
+  });
+
+  it("adds pence without floating-point drift", () => {
+    expect(contractTotal([0.1, 0.2])).toBe(0.3);
+    expect(contractTotal([])).toBe(0);
+  });
+});
+
+describe("which contracts can be issued", () => {
+  it("issues a draft and nothing else", () => {
+    expect(contractIssuable("draft")).toBe(true);
+    for (const status of ["issued", "accepted", "active", "cancelled"])
+      expect(contractIssuable(status)).toBe(false);
   });
 });
