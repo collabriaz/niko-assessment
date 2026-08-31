@@ -14,7 +14,7 @@ Delivery submitted:
 | Date       | Session       | Active | Unattended agent | What                                                                                                  |
 | ---------- | ------------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------- |
 | 2026-08-31 | 13:15 - 14:45 | 1h 30m | 0                | Read the brief, mapped the fixture traps, chose the stack, wrote the availability engine and its tests |
-| 2026-08-31 | 19:45 - 20:30 | 45m    | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed |
+| 2026-08-31 | 19:45 - 20:55 | 1h 10m | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed, then the org-scoped reads, per-asset availability and the catalogue endpoints |
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.
@@ -95,6 +95,23 @@ agent was running while I was not watching.
 - **What check proved the correction:** `pnpm lint` now reports `Checked 19 files` with the
   fixture pack absent from the list, where it previously reported 20 and named the file, and
   `git status --porcelain assessment_files/` is empty.
+
+### 5. A Prisma row passed straight into the domain, dropping a field
+
+- **What the tool generated:** `src/data/products.ts` passed the Prisma `Product` row directly
+  as the availability calculation's `product` input.
+- **Why it was wrong:** `Product` has no `capacityPoolId` column. The foreign key lives on
+  `CapacityPool.productId`, so the field arrived as `undefined`, the pool lookup missed, and
+  every capacity-pool product reported "No active capacity pool is configured". The domain's
+  input type declares that field optional, so the compiler had no reason to object.
+- **How it was noticed:** the integration probe for `pool-hub-screen` over 2027-02-01 to
+  2027-02-20 returned `unavailable` where the same query against the fixture file returned
+  `available` with 3 of 4 used. The first hypothesis was a timezone shift in the `@db.Date`
+  conversion; a probe disproved that before anything was changed.
+- **What changed:** the call site now builds the domain input explicitly, taking the pool id
+  from the included relation.
+- **What check proved the correction:** `pnpm test`, 33 passing, including the pool probe
+  running against Postgres rather than the fixture file.
 
 ## Prompts worth quoting
 
