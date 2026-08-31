@@ -157,8 +157,7 @@ read in 10 seconds and has the fewest moving parts.
 ## Coding rules
 
 - **Laconic code** - concise expressions, no unnecessary intermediate variables
-- **No comments** - only where logic is genuinely non-obvious: a business rule from the brief,
-  a boundary condition, a workaround. Never restate the code.
+- **No comments.** See the section below. The default is zero.
 - **No em dashes** in code, comments, docs or commit messages
 - **`type` over `interface`** - consistent with `z.infer<>`
 - **No `any`** - `unknown` for truly unknown values. If you touch a file with `any`, fix it.
@@ -168,6 +167,27 @@ read in 10 seconds and has the fewest moving parts.
 - **`as const` over `enum`** - derive union types via `typeof obj[keyof typeof obj]`
 - **No `console.log`** in shipped code
 - **Sorted Tailwind classes**
+
+## Comments
+
+**Never add a useless comment. The default is no comment at all.** Dense comment cover is the
+clearest tell of AI-generated code, and this submission is read by a human who is judging
+whether the candidate wrote it.
+
+Delete on sight:
+
+- anything that restates the code, the function name, or the test name
+- section dividers, banner blocks, step-by-step narration (`// filter the assets`)
+- JSDoc that repeats the signature
+- `// TODO` left behind instead of doing the work or opening an issue
+- a comment explaining a name that should have been better
+
+A comment earns its place only when it records something the code physically cannot: a rule
+taken from `assessment_files/ASSESSMENT.md`, a fixture record that behaves counterintuitively,
+a boundary that looks like an off-by-one but is not, or a workaround with its reason.
+
+If a comment feels needed, first try a better name, a named constant, or a smaller function.
+Reach for the comment only when that fails. When in doubt, leave it out.
 
 ## TypeScript
 
