@@ -21,6 +21,7 @@ export default defineConfig({
           setupFiles: ["./vitest.setup.integration.ts"],
           globalSetup: ["./vitest.global-setup.integration.ts"],
           testTimeout: 30_000,
+          hookTimeout: 30_000,
         },
       },
     ],
