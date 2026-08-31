@@ -79,10 +79,11 @@ model CapacityPool {
   verifiedAt         DateTime?
   verificationSource String?
 
-  product  Product   @relation(fields: [productId], references: [id])
-  location Location  @relation(fields: [locationId], references: [id])
-  bookings Booking[]
-  holds    Hold[]
+  product       Product        @relation(fields: [productId], references: [id])
+  location      Location       @relation(fields: [locationId], references: [id])
+  bookings      Booking[]
+  holds         Hold[]
+  contractItems ContractItem[]
 }
 
 model Booking {
@@ -231,18 +232,20 @@ model Contract {
 }
 
 model ContractItem {
-  id         String  @id
-  contractId String
-  productId  String
-  assetId    String?
-  quantity   Int
-  unitRate   Decimal @db.Decimal(10, 2)
-  rateUnit   String
-  lineTotal  Decimal @db.Decimal(10, 2)
+  id             String   @id
+  contractId     String
+  productId      String
+  assetId        String?
+  capacityPoolId String?
+  quantity       Int
+  unitRate       Decimal? @db.Decimal(10, 2)
+  rateUnit       String?
+  lineTotal      Decimal  @db.Decimal(10, 2)
 
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id])
-  asset    Asset?   @relation(fields: [assetId], references: [id])
+  contract     Contract      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  product      Product       @relation(fields: [productId], references: [id])
+  asset        Asset?        @relation(fields: [assetId], references: [id])
+  capacityPool CapacityPool? @relation(fields: [capacityPoolId], references: [id])
 }
 
 model Campaign {

@@ -39,7 +39,7 @@ export const productSchema = z.object({
   description: z.string(),
   indicativeRate: indicativeRateSchema,
   minimumTermDays: z.number().int(),
-  creativeSpec: z.record(z.string(), z.unknown()).nullable(),
+  creativeSpec: z.record(z.string(), z.json()).nullable(),
 });
 
 export const assetSchema = z.object({
@@ -185,8 +185,21 @@ export const workOrderSchema = z.object({
   campaignId: z.string(),
   contractId: z.string(),
   organisationId: z.string(),
-  type: z.enum(["survey", "production", "installation", "maintenance", "removal"]),
-  status: z.enum(["draft", "assigned", "travelling", "on_site", "blocked", "completed"]),
+  type: z.enum([
+    "survey",
+    "production",
+    "installation",
+    "maintenance",
+    "removal",
+  ]),
+  status: z.enum([
+    "draft",
+    "assigned",
+    "travelling",
+    "on_site",
+    "blocked",
+    "completed",
+  ]),
   assignedUserId: z.string().nullable(),
   assetId: z.string(),
   scheduledStart: timestamp,
