@@ -9,13 +9,14 @@
     "lint": "biome check",
     "check:fix": "biome check --write --unsafe",
     "format": "biome format --write",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "prisma generate && next typegen && tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
     "test:watch": "vitest",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
-    "db:push": "prisma db push",
+    "db:push": "prisma db push && prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset --accept-data-loss && pnpm db:seed"
+    "db:reset": "prisma db push --force-reset --accept-data-loss && prisma generate && pnpm db:seed"
   },
   "dependencies": {
     "@prisma/adapter-neon": "^7.10.0",
