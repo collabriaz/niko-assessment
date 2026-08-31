@@ -16,6 +16,7 @@ Delivery submitted:
 | 2026-08-31 | 13:15 - 14:45 | 1h 30m | 0                | Read the brief, mapped the fixture traps, chose the stack, wrote the availability engine and its tests |
 | 2026-08-31 | 19:45 - 20:55 | 1h 10m | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed, then the org-scoped reads, per-asset availability and the catalogue endpoints |
 | 2026-08-31 | 22:30 - 23:50 | 1h 20m | 0                | Built the HTTP smoke suite, chose and contrast-verified the Island Media palette, added the surface switcher, then the shortlist, booking-request submission and client portal summary |
+| 2026-09-01 | 00:15 - 01:05 | 50m | 0 | Audited the build and the plan against the brief, then built the management booking-request inbox, detail and decision: domain state machine, org-wide reads, `GET`/`PATCH` endpoints, the manager shell, the client/account detail page, and 36 new tests |
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.
@@ -149,6 +150,29 @@ agent was running while I was not watching.
   failure is unambiguous.
 - **What check proved the correction:** the rerun returned `200`, the identical user id, and
   `same user: YES`.
+
+### 8. A decision transaction that did seven seconds of work inside a five-second limit
+
+- **What the tool generated:** `applyManagementDecision` wrapped the whole decision in one
+  interactive transaction, and both the opening `findUnique` and the closing `update` used the
+  full management include: every asset with its bookings, holds and outages, the capacity pool,
+  the organisation and its contract count.
+- **Why it mattered:** Prisma's interactive transactions default to a 5000 ms limit. Over a
+  remote Neon connection the two deep includes took about 7300 ms, so every successful decision
+  rolled back and the route returned `503`. Approvals and declines were simply impossible, and
+  the `try/catch` around the transaction hid the cause behind a generic service error.
+- **How it was noticed:** six integration tests failed together with `503` where `200` was
+  expected. The stderr carried `P2028 ... timeout ... 5000 ms, however 7374 ms passed`, which
+  names the cause precisely rather than leaving it to guesswork.
+- **What changed:** the transaction now holds only what has to be atomic, which is reading the
+  request's status and inventory, running the recheck and writing the new status and history.
+  The response is reassembled by a plain read after the transaction commits, which is the shape
+  the client contract-action route already used. Raising the timeout was rejected: it would
+  have hidden a transaction holding locks far longer than the work needs, and the same shape
+  would have reached production.
+- **What check proved the correction:** the six failures went green and the full suite reports
+  120 passing. The same decision path that returned `503` now returns `200` with the manager
+  history entry attached.
 
 ## Prompts worth quoting
 

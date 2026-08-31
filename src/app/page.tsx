@@ -6,7 +6,7 @@ import { fixtureClock } from "@/domain/fixtures";
 
 const SURFACES = {
   manager: {
-    href: "/dashboard",
+    href: "/manage/requests",
     title: "Management",
     icon: Building2,
     blurb:

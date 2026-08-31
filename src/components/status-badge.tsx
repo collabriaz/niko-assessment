@@ -2,6 +2,10 @@ import { humanise } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const TONE: Record<string, string> = {
+  submitted: "bg-info-surface text-info",
+  information_required: "bg-warning-surface text-warning",
+  approved: "bg-success-surface text-success",
+  declined: "bg-destructive-surface text-destructive",
   draft: "bg-muted text-muted-foreground",
   issued: "bg-info-surface text-info",
   change_requested: "bg-warning-surface text-warning",

@@ -36,6 +36,14 @@ export const currentClient = async (request: Request) => {
   return { user, organisationId: user.organisationId };
 };
 
+export const currentManager = async (request: Request) => {
+  const user = await currentUser(request);
+
+  if (!user || user.role !== "manager") return null;
+
+  return user;
+};
+
 export const sessionUser = async () => {
   const userId = await cookieUserId();
 
