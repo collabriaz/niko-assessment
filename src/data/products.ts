@@ -56,8 +56,6 @@ const toPool = (pool: CapacityPool) => ({
   verifiedAt: timestamp(pool.verifiedAt),
 });
 
-// The rate is stored as five columns and rebuilt here. A null amount stays
-// null so it renders as "Price on request" and never as zero.
 const toIndicativeRate = (product: Product) => ({
   currency: product.rateCurrency,
   amount: product.rateAmount === null ? null : Number(product.rateAmount),
@@ -108,8 +106,6 @@ export const toSearchResult = (
     product: {
       id: product.id,
       allocationModel: product.allocationModel,
-      // The foreign key lives on CapacityPool.productId, so a Product row has
-      // no capacityPoolId of its own.
       capacityPoolId: product.capacityPool?.id ?? null,
     },
     ...inventory(product),
@@ -142,8 +138,6 @@ export const listProducts = async (query: ProductQuery) => {
       locations: query.locationId
         ? { some: { id: query.locationId } }
         : undefined,
-      // SQL drops NULL comparisons, which is what keeps a price-on-request
-      // product out of every budget filter.
       rateMonthlyEquivalent:
         query.maxMonthlyBudget === undefined
           ? undefined
@@ -189,5 +183,24 @@ export const getProduct = async (productId: string, query: ProductQuery) => {
         now: query.now,
       }),
     })),
+  };
+};
+
+export const listCatalogueFilters = async () => {
+  const [locations, mediaTypes] = await Promise.all([
+    prisma.location.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.product.findMany({
+      select: { mediaType: true },
+      distinct: ["mediaType"],
+      orderBy: { mediaType: "asc" },
+    }),
+  ]);
+
+  return {
+    locations,
+    mediaTypes: mediaTypes.map((product) => product.mediaType),
   };
 };
