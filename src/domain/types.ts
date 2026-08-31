@@ -1,85 +1,52 @@
-export type AllocationModel = "exclusive_asset" | "capacity_pool";
-export type AvailabilityState =
-  | "available"
-  | "unavailable"
-  | "confirmation_required";
+import type { z } from "zod";
+import type {
+  assetSchema,
+  bookingRequestSchema,
+  bookingSchema,
+  campaignSchema,
+  capacityPoolSchema,
+  clientRequestSchema,
+  contractItemSchema,
+  contractSchema,
+  fixturesSchema,
+  historyEntrySchema,
+  holdSchema,
+  indicativeRateSchema,
+  locationSchema,
+  mediaOwnerSchema,
+  organisationSchema,
+  outageSchema,
+  productSchema,
+  proofRecordSchema,
+  serviceEventSchema,
+  userSchema,
+  workOrderSchema,
+} from "./schemas";
 
-export type IndicativeRate = {
-  currency: "GBP";
-  amount: number | null;
-  unit: string | null;
-  monthlyEquivalent: number | null;
-  label: string;
-};
+export type HistoryEntry = z.infer<typeof historyEntrySchema>;
+export type MediaOwner = z.infer<typeof mediaOwnerSchema>;
+export type Location = z.infer<typeof locationSchema>;
+export type IndicativeRate = z.infer<typeof indicativeRateSchema>;
+export type Product = z.infer<typeof productSchema>;
+export type Asset = z.infer<typeof assetSchema>;
+export type CapacityPool = z.infer<typeof capacityPoolSchema>;
+export type Booking = z.infer<typeof bookingSchema>;
+export type Hold = z.infer<typeof holdSchema>;
+export type Outage = z.infer<typeof outageSchema>;
+export type Organisation = z.infer<typeof organisationSchema>;
+export type User = z.infer<typeof userSchema>;
+export type BookingRequest = z.infer<typeof bookingRequestSchema>;
+export type ContractItem = z.infer<typeof contractItemSchema>;
+export type Contract = z.infer<typeof contractSchema>;
+export type Campaign = z.infer<typeof campaignSchema>;
+export type WorkOrder = z.infer<typeof workOrderSchema>;
+export type ServiceEvent = z.infer<typeof serviceEventSchema>;
+export type ClientRequest = z.infer<typeof clientRequestSchema>;
+export type ProofRecord = z.infer<typeof proofRecordSchema>;
+export type Fixtures = z.infer<typeof fixturesSchema>;
 
-export type Product = {
-  id: string;
-  name: string;
-  mediaOwnerId: string;
-  mediaType: string;
-  locationIds: string[];
-  allocationModel: AllocationModel;
-  capacityPoolId?: string;
-  description: string;
-  indicativeRate: IndicativeRate;
-  minimumTermDays: number;
-  creativeSpec: Record<string, unknown> | null;
-};
-
-export type Asset = {
-  id: string;
-  productId: string;
-  name: string;
-  locationId: string;
-  status: "active" | "retired";
-  verifiedAt: string | null;
-  verificationSource: string | null;
-  note?: string;
-};
-
-export type CapacityPool = {
-  id: string;
-  productId: string;
-  name: string;
-  locationId: string;
-  capacity: number;
-  status: "active" | "retired";
-  verifiedAt: string | null;
-  verificationSource: string | null;
-};
-
-export type Booking = {
-  id: string;
-  campaignName: string;
-  productId: string;
-  assetId?: string;
-  capacityPoolId?: string;
-  capacityUnits?: number;
-  startDate: string;
-  endDate: string;
-  status: "confirmed" | "cancelled";
-};
-
-export type Hold = {
-  id: string;
-  productId: string;
-  assetId?: string;
-  capacityPoolId?: string;
-  capacityUnits?: number;
-  startDate: string;
-  endDate: string;
-  expiresAt: string;
-  status: string;
-};
-
-export type Outage = {
-  id: string;
-  assetId: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: "confirmed" | "provisional";
-};
+export type AllocationModel = Product["allocationModel"];
+export type AvailabilityState = "available" | "unavailable" | "confirmation_required";
 
 export type AvailabilitySummary = {
   state: AvailabilityState;
@@ -89,16 +56,4 @@ export type AvailabilitySummary = {
   availableCapacity: number | null;
   totalCapacity: number | null;
   freshestVerificationAt: string | null;
-};
-
-export type Fixtures = {
-  schemaVersion: string;
-  fixtureClock: string;
-  currency: "GBP";
-  products: Product[];
-  assets: Asset[];
-  capacityPools: CapacityPool[];
-  bookings: Booking[];
-  holds: Hold[];
-  outages: Outage[];
 };

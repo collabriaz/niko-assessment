@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MediaOwner {
+  id       String    @id
+  name     String
+  products Product[]
+}
+
+model Location {
+  id       String         @id
+  name     String
+  products Product[]
+  assets   Asset[]
+  pools    CapacityPool[]
+}
+
+model Product {
+  id                    String   @id
+  name                  String
+  mediaOwnerId          String
+  mediaType             String
+  allocationModel       String
+  description           String
+  minimumTermDays       Int
+  rateCurrency          String
+  rateAmount            Decimal? @db.Decimal(10, 2)
+  rateUnit              String?
+  rateMonthlyEquivalent Decimal? @db.Decimal(10, 2)
+  rateLabel             String
+  creativeSpec          Json?
+
+  mediaOwner      MediaOwner       @relation(fields: [mediaOwnerId], references: [id])
+  locations       Location[]
+  assets          Asset[]
+  capacityPool    CapacityPool?
+  bookings        Booking[]
+  holds           Hold[]
+  bookingRequests BookingRequest[]
+  shortlistItems  ShortlistItem[]
+  contractItems   ContractItem[]
+
+  @@index([mediaType])
+}
+
+model Asset {
+  id                 String    @id
+  productId          String
+  locationId         String
+  name               String
+  status             String
+  verifiedAt         DateTime?
+  verificationSource String?
+  note               String?
+
+  product       Product        @relation(fields: [productId], references: [id])
+  location      Location       @relation(fields: [locationId], references: [id])
+  bookings      Booking[]
+  holds         Hold[]
+  outages       Outage[]
+  workOrders    WorkOrder[]
+  contractItems ContractItem[]
+
+  @@index([productId, status])
+}
+
+model CapacityPool {
+  id                 String    @id
+  productId          String    @unique
+  locationId         String
+  name               String
+  capacity           Int
+  status             String
+  verifiedAt         DateTime?
+  verificationSource String?
+
+  product  Product   @relation(fields: [productId], references: [id])
+  location Location  @relation(fields: [locationId], references: [id])
+  bookings Booking[]
+  holds    Hold[]
+}
+
+model Booking {
+  id             String   @id
+  campaignName   String
+  productId      String
+  assetId        String?
+  capacityPoolId String?
+  capacityUnits  Int?
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  status         String
+
+  product      Product       @relation(fields: [productId], references: [id])
+  asset        Asset?        @relation(fields: [assetId], references: [id])
+  capacityPool CapacityPool? @relation(fields: [capacityPoolId], references: [id])
+  campaigns    Campaign[]
+
+  @@index([assetId, startDate, endDate])
+  @@index([capacityPoolId, startDate, endDate])
+}
+
+model Hold {
+  id             String   @id
+  productId      String
+  assetId        String?
+  capacityPoolId String?
+  capacityUnits  Int?
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  expiresAt      DateTime
+  status         String
+
+  product      Product       @relation(fields: [productId], references: [id])
+  asset        Asset?        @relation(fields: [assetId], references: [id])
+  capacityPool CapacityPool? @relation(fields: [capacityPoolId], references: [id])
+
+  @@index([assetId, startDate, endDate])
+  @@index([capacityPoolId, startDate, endDate])
+}
+
+model Outage {
+  id        String   @id
+  assetId   String
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  reason    String
+  status    String
+
+  asset Asset @relation(fields: [assetId], references: [id])
+
+  @@index([assetId, startDate, endDate])
+}
+
+model Organisation {
+  id        String   @id
+  name      String
+  createdAt DateTime
+
+  users           User[]
+  bookingRequests BookingRequest[]
+  shortlistItems  ShortlistItem[]
+  contracts       Contract[]
+  campaigns       Campaign[]
+  workOrders      WorkOrder[]
+  serviceEvents   ServiceEvent[]
+  clientRequests  ClientRequest[]
+}
+
+model User {
+  id             String  @id
+  name           String
+  email          String  @unique
+  role           String
+  organisationId String?
+  status         String
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+  workOrders   WorkOrder[]
+  proofRecords ProofRecord[]
+}
+
+model BookingRequest {
+  id                   String   @id
+  organisationId       String
+  productId            String
+  requestedAssetId     String?
+  advertiserName       String
+  advertiserContactName String
+  advertiserEmail      String
+  startDate            DateTime @db.Date
+  endDate              DateTime @db.Date
+  budget               Decimal? @db.Decimal(10, 2)
+  objective            String
+  notes                String?
+  status               String
+  createdAt            DateTime
+  history              Json
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+  contracts    Contract[]
+
+  @@index([organisationId])
+  @@index([status])
+}
+
+model ShortlistItem {
+  id             String   @id @default(uuid())
+  organisationId String
+  productId      String
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+
+  @@unique([organisationId, productId])
+}
+
+model Contract {
+  id               String    @id
+  organisationId   String
+  bookingRequestId String?
+  status           String
+  version          Int
+  startDate        DateTime  @db.Date
+  endDate          DateTime  @db.Date
+  currency         String
+  total            Decimal   @db.Decimal(10, 2)
+  issuedAt         DateTime?
+  acceptedAt       DateTime?
+  activatedAt      DateTime?
+  history          Json
+
+  organisation   Organisation    @relation(fields: [organisationId], references: [id])
+  bookingRequest BookingRequest? @relation(fields: [bookingRequestId], references: [id])
+  items          ContractItem[]
+  campaigns      Campaign[]
+  workOrders     WorkOrder[]
+  serviceEvents  ServiceEvent[]
+  clientRequests ClientRequest[]
+
+  @@index([organisationId])
+}
+
+model ContractItem {
+  id         String  @id
+  contractId String
+  productId  String
+  assetId    String?
+  quantity   Int
+  unitRate   Decimal @db.Decimal(10, 2)
+  rateUnit   String
+  lineTotal  Decimal @db.Decimal(10, 2)
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+  asset    Asset?   @relation(fields: [assetId], references: [id])
+}
+
+model Campaign {
+  id             String  @id
+  organisationId String
+  contractId     String
+  bookingId      String?
+  name           String
+  status         String
+  currentStage   String
+  clientVisible  Boolean
+
+  organisation  Organisation   @relation(fields: [organisationId], references: [id])
+  contract      Contract       @relation(fields: [contractId], references: [id])
+  booking       Booking?       @relation(fields: [bookingId], references: [id])
+  workOrders    WorkOrder[]
+  serviceEvents ServiceEvent[]
+
+  @@index([organisationId])
+}
+
+model WorkOrder {
+  id             String   @id
+  campaignId     String
+  contractId     String
+  organisationId String
+  assetId        String
+  assignedUserId String?
+  type           String
+  status         String
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  locationLabel  String
+  instructions   String
+  internalNotes  String?
+  completionNote String?
+  blockedReason  String?
+  history        Json
+
+  campaign     Campaign       @relation(fields: [campaignId], references: [id])
+  contract     Contract       @relation(fields: [contractId], references: [id])
+  organisation Organisation   @relation(fields: [organisationId], references: [id])
+  asset        Asset          @relation(fields: [assetId], references: [id])
+  assignedUser User?          @relation(fields: [assignedUserId], references: [id])
+  proofRecords ProofRecord[]
+  serviceEvents ServiceEvent[]
+
+  @@index([assignedUserId, scheduledStart])
+  @@index([organisationId])
+}
+
+model ProofRecord {
+  id              String   @id @default(uuid())
+  workOrderId     String
+  createdByUserId String
+  fileName        String
+  previewUrl      String?
+  completionNote  String
+  createdAt       DateTime @default(now())
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  createdBy User      @relation(fields: [createdByUserId], references: [id])
+
+  @@index([workOrderId])
+}
+
+model ServiceEvent {
+  id             String   @id @default(uuid())
+  organisationId String
+  contractId     String?
+  campaignId     String?
+  workOrderId    String?
+  at             DateTime
+  type           String
+  title          String
+  clientVisible  Boolean
+  clientSummary  String?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  contract     Contract?    @relation(fields: [contractId], references: [id])
+  campaign     Campaign?    @relation(fields: [campaignId], references: [id])
+  workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id])
+
+  @@index([organisationId, at])
+}
+
+model ClientRequest {
+  id             String   @id @default(uuid())
+  organisationId String
+  contractId     String?
+  type           String
+  status         String
+  summary        String
+  createdAt      DateTime
+  history        Json
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  contract     Contract?    @relation(fields: [contractId], references: [id])
+
+  @@index([organisationId])
+}
+
+model IdempotencyKey {
+  scope     String
+  key       String
+  recordId  String
+  createdAt DateTime @default(now())
+
+  @@id([scope, key])
+}

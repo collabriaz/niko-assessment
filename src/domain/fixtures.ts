@@ -1,6 +1,6 @@
 import raw from "../../assessment_files/fixtures/island-media-fixtures.json";
-import type { Fixtures } from "./types";
+import { fixturesSchema } from "./schemas";
 
-export const fixtures = raw as unknown as Fixtures;
+export const fixtures = fixturesSchema.parse(raw);
 
 export const fixtureClock = new Date(fixtures.fixtureClock);
