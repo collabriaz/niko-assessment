@@ -3,10 +3,6 @@ import type { AvailabilitySummary } from "./types";
 const VERIFICATION_MAX_AGE_DAYS = 30;
 const DAY_MS = 86_400_000;
 
-// These describe only what the calculation reads, so a fixture record and a
-// mapped database row both satisfy them. A hold has no status field here on
-// purpose: the rule is expiresAt, and fixture hold-002 is an expired hold
-// still marked "active".
 type AvailabilityAsset = {
   id: string;
   productId: string;
@@ -74,7 +70,6 @@ export type AvailabilityInput = {
   now: Date;
 };
 
-// Intervals are half-open: [start, end). Touching boundaries do not overlap.
 export const overlaps = (
   aStart: string,
   aEnd: string,
@@ -82,8 +77,6 @@ export const overlaps = (
   bEnd: string,
 ) => aStart < bEnd && bStart < aEnd;
 
-// A hold blocks only while it has not expired. The `status` field lies: the
-// fixtures contain an expired hold still marked "active".
 const isLive = (hold: AvailabilityHold, now: Date) =>
   new Date(hold.expiresAt) > now;
 
@@ -92,8 +85,6 @@ const isStale = (verifiedAt: string | null, now: Date) =>
   now.getTime() - new Date(verifiedAt).getTime() >
     VERIFICATION_MAX_AGE_DAYS * DAY_MS;
 
-// Reasons are shown in the public catalogue, so they never name the campaign
-// occupying an asset. booking-001 is another advertiser's "Northstar launch".
 const blockingReason = ({
   asset,
   bookings,

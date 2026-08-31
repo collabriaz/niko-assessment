@@ -19,7 +19,6 @@ export default defineConfig({
           name: "integration",
           include: ["src/data/**/*.test.ts", "src/app/**/*.test.ts"],
           setupFiles: ["./vitest.setup.integration.ts"],
-          // Neon is serverless and the first query pays a cold start.
           testTimeout: 30_000,
         },
       },

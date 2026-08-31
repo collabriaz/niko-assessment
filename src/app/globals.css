@@ -67,16 +67,12 @@
   --accent: oklch(0.945 0.03 236);
   --accent-foreground: oklch(0.3 0.04 243);
 
-  /* available */
   --success: oklch(0.505 0.12 156);
   --success-surface: oklch(0.965 0.032 156);
-  /* confirmation_required */
   --warning: oklch(0.525 0.113 70);
   --warning-surface: oklch(0.968 0.027 78);
-  /* unavailable, and destructive actions */
   --destructive: oklch(0.545 0.2 25);
   --destructive-surface: oklch(0.966 0.016 25);
-  /* neutral emphasis: issued, awaiting, in progress */
   --info: oklch(0.515 0.124 243);
   --info-surface: oklch(0.963 0.019 240);
 
