@@ -15,6 +15,7 @@ Delivery submitted:
 | ---------- | ------------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------- |
 | 2026-08-31 | 13:15 - 14:45 | 1h 30m | 0                | Read the brief, mapped the fixture traps, chose the stack, wrote the availability engine and its tests |
 | 2026-08-31 | 19:45 - 20:55 | 1h 10m | 0                | Audited the build against the brief, settled minimum term as advisory, corrected the contract-item schema against the OpenAPI, wrote the shared fixture seed, then the org-scoped reads, per-asset availability and the catalogue endpoints |
+| 2026-08-31 | 22:30 - 23:50 | 1h 20m | 0                | Built the HTTP smoke suite, chose and contrast-verified the Island Media palette, added the surface switcher, then the shortlist, booking-request submission and client portal summary |
 
 Active means at the keyboard reading, directing, reviewing or writing. Unattended means the
 agent was running while I was not watching.
@@ -23,7 +24,7 @@ agent was running while I was not watching.
 
 | Tool               | Contribution                                                                                   | How the output was verified                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code (Opus) | Fixture analysis, `src/domain/` availability engine, its test suite, `CLAUDE.md` project rules | `pnpm test` (12/12). Every expected value in the suite was traced back to the specific fixture records before the suite was run |
+| Claude Code (Opus) | Fixture analysis, the `src/domain/` availability engine, the Prisma schema and seed, the org-scoped data layer, every route handler so far, the design tokens, and the test suite | Three layers, because each catches what the others cannot. `pnpm test` (65/65) runs pure domain probes plus integration tests against Postgres. A shell smoke suite then exercises every route over real HTTP, because an in-process test calls the handler function and never touches Next's router, body parsing or dynamic segments. Colour tokens were verified with an oklch to sRGB converter rather than by eye. Every expected value was traced to a specific fixture record before the assertion was written |
 
 ## Corrections
 
@@ -112,6 +113,42 @@ agent was running while I was not watching.
   from the included relation.
 - **What check proved the correction:** `pnpm test`, 33 passing, including the pool probe
   running against Postgres rather than the fixture file.
+
+### 6. Design tokens that were outside the sRGB gamut
+
+- **What the tool generated:** an oklch palette for Island Media Co chosen for how the numbers
+  read rather than measured, including `oklch(0.515 0.14 243)` as the primary.
+- **Why it was wrong:** several of those colours do not exist in sRGB at that lightness. A
+  browser silently clips them, so the rendered colour would not have been the one the file
+  claimed, and the contrast I believed I had would have been fiction.
+- **How it was noticed:** rather than eyeballing the palette, an oklch to sRGB converter was
+  written to check gamut and compute every foreground/background contrast ratio. Four tokens
+  came back out of gamut and two badge pairs sat under 4.5:1.
+- **What changed:** a binary search now fixes each colour to the largest chroma that fits at
+  its lightness, and the badge tints were lightened. The worst pair is 4.95:1, so every
+  combination clears WCAG AA for normal text.
+- **What check proved the correction:** the converter output, and independently, the compiled
+  stylesheet Tailwind emits. Its hex fallbacks (`#e8f5ff`, `#e3faeb`, `#fff3e1`, `#fff0ee`)
+  match the converter's predictions exactly, having been derived from the oklch source by a
+  different route.
+
+### 7. A smoke script that reported a failure the application did not have
+
+- **What the tool generated:** a curl step that built its JSON body with escaped double quotes
+  inside a command substitution. The payload split on the spaces in "Smoke Test Co", so curl
+  sent a truncated body plus stray arguments.
+- **Why it mattered:** it reported `422` for a repeated idempotency key where `200` was
+  expected, which looks exactly like broken idempotency. The tempting next move is to go and
+  "fix" working code.
+- **How it was noticed:** the same behaviour already had a passing integration test asserting
+  200, the same user id and exactly one organisation created. Two sources disagreeing meant
+  one of them was lying, and the malformed step was the only one in the script quoting its
+  payload that way.
+- **What changed:** the payload moved into a quoted variable. The step now also prints both
+  user ids and an explicit `same user: YES/NO` rather than a bare status code, so a future
+  failure is unambiguous.
+- **What check proved the correction:** the rerun returned `200`, the identical user id, and
+  `same user: YES`.
 
 ## Prompts worth quoting
 
