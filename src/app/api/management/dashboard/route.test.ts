@@ -46,13 +46,24 @@ describe("GET /api/management/dashboard", () => {
 
   it("lists the job scheduled for the day after the fixture clock", async () => {
     const { upcomingWorkOrders } = await (await load(MANAGER)).json();
+    const seeded = upcomingWorkOrders.find(
+      (workOrder: { id: string }) => workOrder.id === "work-order-001",
+    );
 
-    expect(upcomingWorkOrders.at(0)).toMatchObject({
-      id: "work-order-001",
+    expect(seeded).toMatchObject({
       status: "assigned",
       assignedUserId: FITTER,
       scheduledStart: "2027-01-16T08:30:00.000Z",
     });
+  });
+
+  it("puts the soonest job first", async () => {
+    const { upcomingWorkOrders } = await (await load(MANAGER)).json();
+    const starts = upcomingWorkOrders.map(
+      (workOrder: { scheduledStart: string }) => workOrder.scheduledStart,
+    );
+
+    expect(starts).toEqual([...starts].sort());
   });
 
   it("never puts a fitter's internal notes on the dashboard", async () => {
