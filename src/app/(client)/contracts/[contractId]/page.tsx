@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ContractActions } from "@/components/contract-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { getContractForOrganisation } from "@/data/contracts";
-import { clientActionRequired } from "@/domain/contracts";
+import { clientActionAllowed, clientActionRequired } from "@/domain/contracts";
 import { formatDate, formatMoney } from "@/lib/format";
 import { sessionUser } from "@/lib/session";
 
@@ -22,6 +23,10 @@ export default async function ContractPage({
   if (!contract) notFound();
 
   const action = clientActionRequired(contract.status);
+  const canRespond = clientActionAllowed(
+    contract.status,
+    "request_cancellation",
+  );
 
   return (
     <div className="space-y-10">
@@ -49,6 +54,17 @@ export default async function ContractPage({
           <span className="font-medium">{action}.</span> Nothing changes on this
           contract until you respond and Island Media Co updates it.
         </p>
+      )}
+
+      {canRespond && (
+        <ContractActions
+          contractId={contract.id}
+          canAccept={clientActionAllowed(contract.status, "accept")}
+          canRequestChanges={clientActionAllowed(
+            contract.status,
+            "request_changes",
+          )}
+        />
       )}
 
       <section>
