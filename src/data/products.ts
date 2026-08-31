@@ -67,14 +67,14 @@ const toIndicativeRate = (product: Product) => ({
   label: product.rateLabel,
 });
 
-type ProductRow = Product & {
+export type ProductRow = Product & {
   mediaOwner: { name: string };
   locations: { id: string; name: string }[];
   assets: (Asset & { bookings: Booking[]; holds: Hold[]; outages: Outage[] })[];
   capacityPool: (CapacityPool & { bookings: Booking[]; holds: Hold[] }) | null;
 };
 
-const inventory = (product: ProductRow) => ({
+export const toAvailabilityInventory = (product: ProductRow) => ({
   assets: product.assets.map(toAsset),
   bookings: [
     ...product.assets.flatMap((asset) => asset.bookings),
@@ -108,7 +108,7 @@ export const toSearchResult = (
       allocationModel: product.allocationModel,
       capacityPoolId: product.capacityPool?.id ?? null,
     },
-    ...inventory(product),
+    ...toAvailabilityInventory(product),
     startDate,
     endDate,
     now,
@@ -160,7 +160,7 @@ export const getProduct = async (productId: string, query: ProductQuery) => {
 
   if (!product) return null;
 
-  const { bookings, holds, outages } = inventory(product);
+  const { bookings, holds, outages } = toAvailabilityInventory(product);
 
   return {
     ...toSearchResult(product, query.startDate, query.endDate, query.now),
