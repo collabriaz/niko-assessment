@@ -11,8 +11,7 @@ import {
   checkProductAvailability,
 } from "../domain/availability";
 import { prisma } from "../lib/prisma";
-
-const dateOnly = (value: Date) => value.toISOString().slice(0, 10);
+import { dateOnly } from "./dates";
 
 const timestamp = (value: Date | null) => value?.toISOString() ?? null;
 
@@ -91,7 +90,7 @@ const inventory = (product: ProductRow) => ({
   pools: product.capacityPool ? [toPool(product.capacityPool)] : [],
 });
 
-const toSearchResult = (
+export const toSearchResult = (
   product: ProductRow,
   startDate: string,
   endDate: string,
@@ -120,7 +119,7 @@ const toSearchResult = (
   }),
 });
 
-const withInventory = {
+export const withInventory = {
   mediaOwner: true,
   locations: true,
   assets: { include: { bookings: true, holds: true, outages: true } },

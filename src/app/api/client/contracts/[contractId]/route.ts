@@ -1,19 +1,18 @@
 import { getContractForOrganisation } from "@/data/contracts";
 import { forbidden, notFound } from "@/lib/api-errors";
-import { currentUser } from "@/lib/session";
+import { currentClient } from "@/lib/session";
 
 export async function GET(
   request: Request,
   context: RouteContext<"/api/client/contracts/[contractId]">,
 ) {
-  const user = await currentUser(request);
+  const client = await currentClient(request);
 
-  if (!user || user.role !== "client" || !user.organisationId)
-    return forbidden();
+  if (!client) return forbidden();
 
   const { contractId } = await context.params;
   const contract = await getContractForOrganisation(
-    user.organisationId,
+    client.organisationId,
     contractId,
   );
 

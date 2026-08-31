@@ -1,7 +1,6 @@
 import type { ContractItem } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-
-const dateOnly = (value: Date) => value.toISOString().slice(0, 10);
+import { dateOnly } from "./dates";
 
 const toItem = (item: ContractItem) => ({
   id: item.id,

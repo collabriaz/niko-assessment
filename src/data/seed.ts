@@ -1,8 +1,7 @@
 import { fixtures } from "../domain/fixtures";
 import { IDEMPOTENCY_SCOPE } from "../lib/idempotency";
 import { prisma } from "../lib/prisma";
-
-const day = (value: string) => new Date(`${value}T00:00:00Z`);
+import { calendarDate } from "./dates";
 
 const at = (value: string | null) => (value === null ? null : new Date(value));
 
@@ -82,8 +81,8 @@ export const seedDatabase = () =>
           assetId: booking.assetId ?? null,
           capacityPoolId: booking.capacityPoolId ?? null,
           capacityUnits: booking.capacityUnits ?? null,
-          startDate: day(booking.startDate),
-          endDate: day(booking.endDate),
+          startDate: calendarDate(booking.startDate),
+          endDate: calendarDate(booking.endDate),
           status: booking.status,
         })),
       });
@@ -95,8 +94,8 @@ export const seedDatabase = () =>
           assetId: hold.assetId ?? null,
           capacityPoolId: hold.capacityPoolId ?? null,
           capacityUnits: hold.capacityUnits ?? null,
-          startDate: day(hold.startDate),
-          endDate: day(hold.endDate),
+          startDate: calendarDate(hold.startDate),
+          endDate: calendarDate(hold.endDate),
           expiresAt: new Date(hold.expiresAt),
           status: hold.status,
         })),
@@ -105,8 +104,8 @@ export const seedDatabase = () =>
       await tx.outage.createMany({
         data: fixtures.outages.map((outage) => ({
           ...outage,
-          startDate: day(outage.startDate),
-          endDate: day(outage.endDate),
+          startDate: calendarDate(outage.startDate),
+          endDate: calendarDate(outage.endDate),
         })),
       });
 
@@ -129,8 +128,8 @@ export const seedDatabase = () =>
           advertiserName: request.advertiser.name,
           advertiserContactName: request.advertiser.contactName,
           advertiserEmail: request.advertiser.email,
-          startDate: day(request.startDate),
-          endDate: day(request.endDate),
+          startDate: calendarDate(request.startDate),
+          endDate: calendarDate(request.endDate),
           budget: request.budget,
           objective: request.objective,
           notes: request.notes,
@@ -156,8 +155,8 @@ export const seedDatabase = () =>
             bookingRequestId: contract.bookingRequestId,
             status: contract.status,
             version: contract.version,
-            startDate: day(contract.startDate),
-            endDate: day(contract.endDate),
+            startDate: calendarDate(contract.startDate),
+            endDate: calendarDate(contract.endDate),
             currency: contract.currency,
             total: contract.total,
             issuedAt: at(contract.issuedAt),

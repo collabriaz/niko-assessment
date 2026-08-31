@@ -27,3 +27,11 @@ export const currentUser = async (request: Request) => {
 
   return getUser(userId);
 };
+
+export const currentClient = async (request: Request) => {
+  const user = await currentUser(request);
+
+  if (!user || user.role !== "client" || !user.organisationId) return null;
+
+  return { user, organisationId: user.organisationId };
+};
