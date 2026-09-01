@@ -14,7 +14,7 @@
 - Private repository: https://github.com/collabriaz/niko-assessment
 - Confirm `@niko-frameworks` has access: Yes
 - Deployed preview: <https://niko-assessment.vercel.app>
-- Walkthrough video: _video URL_
+- Walkthrough video: <https://drive.google.com/file/d/1ZIyJa3Svf2SicGzW3VwpTWE3TR6C8AcK/view?usp=sharing>
 
 ## Prototype access
 
@@ -44,7 +44,7 @@ that user id. API routes also accept an `X-Prototype-User-Id` header.
 - Active working time: 7h 40m
 - Unattended agent elapsed time: 0. The agent was never left running unwatched
 - Delivery started: 2026-08-31, 09:15 (Europe/London)
-- Delivery submitted: _fill in on submission_
+- Delivery submitted: 2026-08-31, 23:45 (Europe/London)
 
 The per-session breakdown is in `AI-LOG.md`, kept as the work happened rather than
 reconstructed at the end. Times are Europe/London; the development machine runs at UTC+5 and

@@ -9,7 +9,7 @@ misleading time reporting as an integrity failure.
 ## Time record
 
 Delivery started: 2026-08-31, 09:15
-Delivery submitted:
+Delivery submitted: 2026-08-31, 23:45
 
 | Date       | Session       | Active | Unattended agent | What                                                                                                  |
 | ---------- | ------------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------------- |
