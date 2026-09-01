@@ -1,8 +1,10 @@
 import { Building2, HardHat, Store } from "lucide-react";
 import Link from "next/link";
+import { SignOutButton } from "@/components/sign-out-button";
 import { SwitchUserButton } from "@/components/switch-user-button";
 import { listPrototypeUsers } from "@/data/users";
 import { fixtureClock } from "@/domain/fixtures";
+import { sessionUser } from "@/lib/session";
 
 const SURFACES = {
   manager: {
@@ -31,7 +33,10 @@ const SURFACES = {
 const ORDER = ["manager", "client", "fitter"] as const;
 
 export default async function Home() {
-  const users = await listPrototypeUsers();
+  const [users, user] = await Promise.all([
+    listPrototypeUsers(),
+    sessionUser(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-16">
@@ -45,6 +50,16 @@ export default async function Home() {
         Three surfaces over the same data. Pick a seeded account to enter, or
         sign up as a new client with no contract.
       </p>
+
+      {user && (
+        <p className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span>
+            Signed in as{" "}
+            <span className="font-medium text-foreground">{user.name}</span>
+          </span>
+          <SignOutButton />
+        </p>
+      )}
 
       <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-info-surface px-3 py-1.5 text-sm text-info">
         <span className="font-medium">Prototype clock</span>
@@ -83,12 +98,20 @@ export default async function Home() {
               </div>
 
               {role === "client" && (
-                <Link
-                  href="/register"
-                  className="mt-3 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Sign up as a new client
-                </Link>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+                  <Link
+                    href="/catalogue"
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Browse the catalogue
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Sign up as a new client
+                  </Link>
+                </div>
               )}
             </section>
           );

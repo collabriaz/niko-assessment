@@ -29,3 +29,14 @@ export async function POST(request: Request) {
 
   return response;
 }
+
+export async function DELETE() {
+  const response = new Response(null, { status: 204 });
+
+  response.headers.set(
+    "Set-Cookie",
+    `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
+  );
+
+  return response;
+}

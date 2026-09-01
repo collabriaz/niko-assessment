@@ -136,7 +136,7 @@ export default async function ContractPage({
           <ol className="mt-3 space-y-4 border-l pl-6">
             {contract.serviceEvents.map((event) => (
               <li key={event.id} className="relative">
-                <span className="absolute top-1.5 -left-6.75 size-2.5 rounded-full bg-primary" />
+                <span className="absolute top-1.5 -left-6 size-2.5 -translate-x-1/2 rounded-full bg-primary" />
                 <p className="font-medium">{event.title}</p>
                 <p className="text-sm text-muted-foreground">
                   {event.clientSummary}
